@@ -1,0 +1,67 @@
+name: clearancex-graph-hacks
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: clearancex
+      POSTGRES_USER: clearancex
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run scripts/setup-local.ps1 first}
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U clearancex -d clearancex"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+  falkordb:
+    image: falkordb/falkordb:v4.12.0
+    environment:
+      REDIS_ARGS: "--requirepass ${FALKORDB_PASSWORD:?Run scripts/setup-local.ps1 first} --appendonly yes --maxmemory 1gb --maxmemory-policy noeviction"
+      FALKORDB_PASSWORD: ${FALKORDB_PASSWORD}
+    volumes: [graph_data:/data]
+    healthcheck:
+      test: [CMD-SHELL, 'REDISCLI_AUTH="$$FALKORDB_PASSWORD" redis-cli ping | grep -q PONG']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+  api:
+    build:
+      context: ./backend
+      args:
+        WITH_OCR: ${WITH_OCR:-false}
+    environment:
+      DATABASE_URL: postgresql://clearancex:${POSTGRES_PASSWORD}@postgres:5432/clearancex
+      FALKORDB_HOST: falkordb
+      FALKORDB_PASSWORD: ${FALKORDB_PASSWORD}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
+      UPLOAD_ROOT: /data/uploads
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      ENABLE_LIVE_AGENT: ${ENABLE_LIVE_AGENT:-false}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_AGENT_MODEL: ${OPENAI_AGENT_MODEL:-}
+      AGENT_BUDGET_USD: ${AGENT_BUDGET_USD:-0}
+      MODEL_INPUT_USD_PER_MILLION: ${MODEL_INPUT_USD_PER_MILLION:-0}
+      MODEL_OUTPUT_USD_PER_MILLION: ${MODEL_OUTPUT_USD_PER_MILLION:-0}
+    volumes: [private_uploads:/data/uploads]
+    depends_on:
+      postgres: {condition: service_healthy}
+      falkordb: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready')"]
+      interval: 10s
+      timeout: 8s
+      retries: 10
+    restart: unless-stopped
+  frontend:
+    build:
+      context: ./frontend
+      args: {VITE_API_URL: /api}
+    ports: ["127.0.0.1:8080:80"]
+    depends_on:
+      api: {condition: service_healthy}
+    restart: unless-stopped
+volumes:
+  postgres_data:
+  graph_data:
+  private_uploads:

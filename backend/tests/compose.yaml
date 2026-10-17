@@ -1,0 +1,14 @@
+name: clearancex-integration-tests
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: clearancex_test
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: clearancex_local_test_only
+    ports: ["127.0.0.1:5449:5432"]
+  falkordb:
+    image: falkordb/falkordb:v4.12.0
+    environment:
+      REDIS_ARGS: "--requirepass clearancex_graph_test_only"
+    ports: ["127.0.0.1:6399:6379"]

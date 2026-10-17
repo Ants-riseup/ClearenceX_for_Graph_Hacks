@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+uploads/
+.env*
+tests/.test_uploads/
+data/
+sample_docs/
+ocr_output_sample.json
+ai_pipeline/pipeline_output_sample.json

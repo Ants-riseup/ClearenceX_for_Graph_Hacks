@@ -1,77 +1,108 @@
-# Ants — your hackathon workspace
+# ClearanceX Context Agent
 
-A complete React + TypeScript app for Team Ants to save future hackathons, track applications, divide the work, and keep important links together.
+ClearanceX connects shipping-document evidence to reviewer decisions. It investigates conflicts using FalkorDB, proposes a source-linked review task, and identifies which approvals become stale when a supporting document changes.
 
-## Start
+Built with React/TypeScript, FastAPI, PostgreSQL, FalkorDB and optional OpenAI API inference. The default infrastructure runs locally. OpenAI is a deliberate usage-based option, disabled until configured. This is a document-review prototype; template XML generation is not verified official ASYCUDA integration.
 
-```sh
-npm install
-npm run dev
+## Start locally with Docker
+
+Requirements: Docker with Compose, internet for initial images, and enough memory/disk for the services. OCR is an optional heavier profile. Windows setup:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/setup-local.ps1
+docker compose --env-file .env.graphhacks up --build -d
+docker compose --env-file .env.graphhacks exec api python -m context_app.admin create-user --email you@example.com
 ```
 
-Open the local URL printed by Vite. The app works immediately in local mode; it does not require an account or a working database. Existing `ants_team_demo_v1` browser data is retained.
+Save the generated password privately. Open **http://localhost:8080**, sign in, open **Context Agent** from the menu, and select **Create synthetic example**. It creates actual PDF files with explicitly precomputed synthetic extraction, then projects their assertions into a real FalkorDB graph. No paid model is needed to inspect graph evidence, create review tasks, approve source values, or demonstrate source-change invalidation.
 
-```sh
-npm test          # Data integrity and Postgres/RLS integration checks
-npm run build    # TypeScript check and optimized production build
-npm run preview  # Preview dist/
+Linux/macOS: copy `.env.graphhacks.example` to `.env.graphhacks`, replace both `GENERATE_ME` passwords with distinct random hexadecimal values, then run the same Compose commands. Never commit the private file. `scripts/setup-local.ps1` preserves an existing configuration. The databases and graph browser are not published to the host; the UI binds to loopback.
+
+## Demonstrate the graph-dependent flow
+
+1. Create the synthetic example and wait for **Graph synced**.
+2. Select **Gross Weight**. The graph retrieves the invoice/packing list at 450 kg and AWB at 440 kg. Open a source page.
+3. Enter a review reason, create a review task and, once synced, approve the packing-list assertion.
+4. Select **Package Count**, create a separate task and approve the invoice's 12 packages. This is the unaffected decision.
+5. Apply the **synthetic packing-list correction to 440 kg**. The graph traverses dependencies. The weight approval becomes stale; the package-count decision remains current.
+6. After synchronization, reopen the dossier in another session. Historical approval is retained, but stale memory is excluded. Export readiness requires re-review.
+7. When configured, **Run investigation** uses real OpenAI function calls to select the graph tools and persist a pending review task. An unconfigured model reports an explicit error; it never returns a simulated agent answer.
+
+FalkorDB is required for context queries, proposals, approvals and source-replacement impact. There is no SQL/NetworkX replacement when the graph is unavailable. Existing deterministic discrepancy code remains for the ordinary review screens.
+
+## Enable the OpenAI agent deliberately
+
+In private `.env.graphhacks`, configure all of:
+
+```dotenv
+ENABLE_LIVE_AGENT=true
+OPENAI_API_KEY=your_private_project_key
+OPENAI_AGENT_MODEL=your_supported_tool_calling_model
+AGENT_BUDGET_USD=your_chosen_total_ceiling
+MODEL_INPUT_USD_PER_MILLION=verified_input_rate
+MODEL_OUTPUT_USD_PER_MILLION=verified_output_rate
 ```
 
-## What is included
+Recreate the API with `docker compose --env-file .env.graphhacks up -d api`. Choose a currently available model supporting Chat Completions function calls/structured outputs; verify its current prices. Do not copy the placeholder values above literally. The previous `gpt-4o-mini` default is not assumed to be an appropriate current model.
 
-- Dark launchpad with lime accents, top navigation, a next-event game plan, immediate tasks, and a deadline timeline.
-- Hackathon create/edit/delete; stages, priority, application deadline, event date, lead, prizes, requirements, notes, and official links.
-- Discover / Prepare / Compete / Results pipeline, plus card and list views with stage/priority filters. Open any opportunity to update its stage.
-- Tasks linked to hackathons with assignees, due dates, completion, and filters.
-- Calendar with application deadlines, event days, and task dates. Small screens use a readable monthly agenda. Export `.ics` files to a calendar app.
-- Resource library for repositories, pitch decks, documents, videos, and application links.
-- Global search with Ctrl/Command + K.
-- JSON backups, validated local restore, CSV export with spreadsheet formula protection.
-- Native accessible dialogs, keyboard dismissal/focus restoration, mobile navigation, and reduced-motion support.
-- Supabase email sign-in, private workspace creation/joining, high-entropy invitation codes, and atomic local-to-cloud import.
+The agent reserves a conservative per-call cost in PostgreSQL, enforces six tools, one nonparallel call at a time, 600 output tokens per request, a bounded context and no automatic retries/model escalation. The application ledger is shared across processes. Unknown outcomes remain charged at their reserved upper bound. Prices must cover the selected model's complete billed token categories. This is a conservative application control, not a guarantee about a provider invoice or other applications using the same key. Never put keys in the frontend. [Official OpenAI pricing](https://developers.openai.com/api/docs/pricing).
 
-The sample events are examples carried over from the original project. Their registration dates and eligibility have **not** been verified. Replace them with confirmed event details or choose **Team & settings → Start a fresh local workspace**.
+## Architecture and graph model
 
-## Turn on private team syncing
+```text
+Browser -> session/CSRF/tenant checks -> FastAPI
+  -> PostgreSQL: identity, immutable source history, decisions, tasks, runs, usage, outbox
+  -> private PDFs: authorized page viewing
+  -> outbox worker -> versioned FalkorDB snapshots
+  -> bounded agent -> typed graph tools -> pending review proposal
+  -> human decision -> graph dependencies -> stale approval on corrected source
+```
 
-1. Create or restore a working Supabase project. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in `.env.local` (copy the structure from `.env.example`). Never use a service-role or secret key in the browser.
-2. Run `supabase/schema.sql` in the project's SQL Editor. This is an additive, repeatable setup transaction: it creates the `ants_*` tables and does **not** drop or modify legacy tables.
-3. Enable email authentication. Add the app's exact URL to the Supabase Auth redirect allowlist, including your local URL for development.
-4. Restart Vite after environment changes. In **Team & settings**, request a sign-in link using your own email, then create your workspace.
-5. In an empty cloud workspace, use **Copy local data to this team** to copy your local hackathons/tasks/resources in one atomic database operation. Original local data is retained. IDs are remapped while preserving associations.
-6. Give teammates the invitation code privately. Each teammate signs in with their own email and selects **Join a team**.
+`Shipment -> Document -> Assertion -> CanonicalField` retains contradictory evidence. `Decision -> DEPENDS_ON -> Assertion -> DEPENDS_ON -> Document` makes change impact queryable. `Memory -> DEPENDS_ON -> Decision` excludes invalidated conclusions. Each tenant gets a graph selected by the authenticated backend, with shipment/revision filtering inside every query.
 
-Each account currently belongs to one workspace. Members can edit/delete shared records; roles are descriptive except that membership creation is restricted to the guarded create/join functions. Changes made by other members appear when you press **Refresh** or reload the app. Background notifications and automatic real-time syncing are not implemented.
+Essential queries: [`backend/context_app/queries/`](backend/context_app/queries/). Full model: [Docs/GRAPH_MODEL.md](Docs/GRAPH_MODEL.md). Setup, recovery and optional MCP: [Docs/LOCAL_SETUP.md](Docs/LOCAL_SETUP.md).
 
-Local and cloud workspaces are intentionally separate. Local storage is specific to the browser **and URL origin** (`localhost` and `127.0.0.1` are different stores). Clearing browser data deletes local records. Use JSON backups before moving devices or resetting.
+## Security and data boundaries
 
-## Database design
+- Generated local accounts; Argon2id passwords; random opaque sessions stored as digests; expiry, rotation, logout revocation and membership/role checks.
+- CSRF verification and exact allowed origins on mutations. Local HTTP uses clearly named development cookies. Set `COOKIE_SECURE=true` only behind correctly configured HTTPS; hosting requires the corresponding origin/proxy configuration.
+- All dossier, graph, status, audit, PDF and export routes enforce tenant ownership. Historical unowned uploads are preserved but not automatically exposed or assigned to an account.
+- PDFs use generated storage names, signature/parser/page limits, per-file/request limits and private downloads. Local OCR executes in a bounded credential-isolated subprocess. This is not a hostile-file sandbox; public upload requires additional isolation and review.
+- Model documents are untrusted input; no arbitrary Cypher, URLs, shell or approval tools. Output citation IDs and numerical claims are checked against retrieved evidence.
+- Pending graph projection blocks graph-dependent actions. Expected revision checks and idempotency prevent stale or repeated decisions.
+- Real events are stored; synthesized audit histories are no longer returned for application dossiers. This is not a tamper-proof ledger against database administrators.
 
-`ants_workspaces`, `ants_members`, `ants_competitions`, `ants_tasks`, and `ants_resources` have RLS enabled. Anonymous users have no table access. Policies require actual membership, and compound foreign keys prevent linking tasks or resources across workspaces. Membership writes occur only inside explicit authenticated create/join functions. Privileged functions live in `ants_private`, which should never be exposed as a Data API schema. Deleting a hackathon unlinks its tasks and resources without deleting them.
+## Test
 
-If the old public tables were previously deployed with RLS disabled, this new schema does not silently change them. Export their data first; then retire their public grants separately. The rebuilt app never reads or writes those tables. There is no automatic migration from the old public database. Local JSON data can be restored and imported using the UI.
+Use an isolated Python environment and the explicit test services:
 
-Reference: [Supabase row-level security](https://supabase.com/docs/guides/database/postgres/row-level-security), [email magic links](https://supabase.com/docs/guides/auth/auth-email-passwordless).
+```powershell
+py -3.11 -m venv .venv
+.venv\Scripts\python.exe -m pip install -r backend/requirements-test.txt
+npm --prefix frontend ci
+npm run test:infra
+npm test
+npm run build
+npm run lint
+```
 
-## Verification and current setup status
+Linux/macOS: create `.venv` with `python3 -m venv .venv` and install through `.venv/bin/python`. Test services use loopback ports **5449** (PostgreSQL) and **6399** (FalkorDB); application databases are separate. `npm test` explicitly selects integration and compatible domain tests; older standalone print-and-exit scripts are not silently treated as pytest suites.
 
-- Production build and TypeScript pass.
-- `tests/model.mjs` checks malformed backups, duplicate IDs, invalid dates, missing relationships, safe URL handling, CSV injection protection, date boundaries, and calendar export.
-- `tests/database.mjs` runs the real schema twice against an isolated PGlite Postgres engine, then checks separate owners/members, cross-team data isolation, denied inserts/updates, membership escalation, invalid invites, linked deletion behavior, local import, and anonymous access denial.
-- Browser checks covered creating/editing hackathons, persisted reloads, dates, linked tasks, task completion, stages, linked resources, unsafe URL rejection, calendar export, and mobile navigation/agenda.
-- The pre-existing configured Supabase REST endpoints returned HTTP 404 during inspection. No production database schema was applied, no live emails were sent, and hosted sign-in/sync still need the setup above. No deployment was published.
+The tests exercise real database/graph queries, selective invalidation, dependency-edge ablation, replay/stale requests, private PDFs, sessions/tenant denial, graph outage, usage reservations and the agent loop with a clearly labeled scripted provider. Live paid-model and real OCR quality checks are separate. See [Docs/EVALUATION.md](Docs/EVALUATION.md) for observed validation and limits.
 
-## Deploy
+## Existing app improvements and honest scope
 
-Deploy `dist/` to any static host after `npm run build`. The existing Vercel rewrite configuration supports serving the app. Configure your current Supabase public environment values at build time, and add the deployed URL to the authentication redirect allowlist.
+Implemented: real sign-in, private sources, graph-backed context screen, persistent decisions/memory/events, source replacement, real graph visualization, upload error handling, bounded polling, explicit OCR failures, shared spending controls and reproducible Compose configuration.
 
-## Source map
+Sample batch filing and tariff references remain labeled/nonoperational. Settings describe the actual fixed prototype comparison policy. JWT, MFA, richer table extraction, managed hosting, multi-agent coordination, company-wide knowledge and large-scale calibration remain roadmap items. A local MCP adapter is included separately; see setup notes for its validation status.
 
-- `src/App.tsx`: navigation, overview, hackathons, tasks, resources, details.
-- `src/Editor.tsx`, `src/ui.tsx`: validated editing and shared UI primitives.
-- `src/Calendar.tsx`, `src/Team.tsx`: calendar, account, invitations, backups.
-- `src/useWorkspace.ts`, `src/db.ts`: persistence, authentication, database access.
-- `src/model.ts`: pure data operations, validation, and exports.
-- `src/data.ts`: shared types and existing starter content.
-- `src/style.css`: responsive design system.
-- `supabase/schema.sql`: non-destructive private database setup.
+## Submission materials
+
+- [Work plan and guideline coverage](GRAPH_HACKS_WORKPLAN.md)
+- [Existing/new-work record](Docs/GRAPH_HACKS_DELTA.md)
+- [Demo script](Docs/DEMO.md)
+- [Evaluation report](Docs/EVALUATION.md)
+
+Primary intended track: Agents That Act on Connected Data. Enter memory/other tracks only for demonstrated capabilities. Confirm existing-project reuse eligibility with the organizers. The team must register, verify licensing/data permissions, record the actual working demo and submit; no submission or public deployment is performed by this repository.
+
+AI assistance disclosure: Codex assisted with this implementation and tests. Team members must inspect, verify and understand the submitted code. Earlier project components are retained and identified in the delta record.

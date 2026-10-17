@@ -1,0 +1,5 @@
+-r requirements-core.txt
+mcp==1.30.0
+pydantic-settings==2.16.0
+sse-starlette==3.5.0
+httpx-sse==0.4.3

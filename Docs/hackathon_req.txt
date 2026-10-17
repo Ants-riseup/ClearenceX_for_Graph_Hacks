@@ -1,0 +1,40 @@
+"Hello everyone! Hope you’re all doing well! 👋 
+ 
+As most of you are finalizing the development of your projects, we’ve noticed a few common questions coming up. So, please take note of the following important points: 
+ 
+ *1. Upload the Complete Project to GitHub* 
+ 
+Please make sure you push your *entire project, including both frontend and backend, source code, configuration files, and any other required files* to your assigned GitHub repository. 
+We will be evaluating the complete project, so please ensure that nothing essential is missing. 
+ 
+ *2. No Need for External Deployment.* 
+ 
+Some participants have asked whether they can host their backend using platforms such as *Render, Railway, or similar services.* 
+ 
+Since we have a large number of projects to evaluate within a limited time, we want to keep the evaluation process as simple and consistent as possible. Therefore, *external deployment is not required.* 
+ 
+You can develop and test your application locally. Please make sure that the complete project can be set up and run *locally.* 
+ 
+ *3. Docker & Docker Compose — IMPORTANT* 🐳 
+ 
+Most importantly, please *containerize your project using Docker.* 
+ 
+Your repository should include a "docker-compose.yml" (or "compose.yaml") file that allows the evaluators to start the required services easily. 
+ 
+Your "README.md" should clearly explain: 
+ 
+• Prerequisites, if any 
+• How to build and start the project using Docker Compose 
+• How to access the application after starting it 
+• Any required environment variables/configurations 
+• Any other important setup instructions 
+ 
+For example, the README should include the appropriate command to start your project, such as: 
+ 
+"docker compose up --build" 
+ 
+The goal is that evaluators should be able to *clone your repository, follow the README instructions, run Docker Compose, and get the complete system running with minimal manual configuration.* 
+ 
+Please make sure to test the setup yourselves before submitting your final project. "
+ 
+If you have any technical issues or questions regarding the submission requirements, feel free to ask in the group.ChatGPT, I am creating about my, check implementation, and give me a prompt about ready and about, like fully complete, empty about it. I want, like you have a success story about the task. Like, the things, like in the task, about the, provide functions, and I am, the revised function, then few steps, tell me about all these kind of things, and also dodoker, commands, and instructions, if you can. Then finally I want fully md file about this text, I sent you.

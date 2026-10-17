@@ -8,3 +8,13 @@ dist/
 .env.production
 *.tsbuildinfo
 artifacts/
+.venv/
+**/venv/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.env.graphhacks
+uploads/
+backend/uploads/
+tmp/
+**/.test_uploads/
