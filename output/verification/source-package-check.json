@@ -1,0 +1,6 @@
+{
+  "status": "passed",
+  "archive": "output/release/ClearanceX_Graph_Hacks_Source.zip",
+  "checks": ["explicit source allowlist and API-key-pattern scan", "fresh archive extraction", "fresh npm ci: 150 packages, zero reported vulnerabilities", "TypeScript and Vite production build", "Python source compilation", "archived backend imports with packaged dependencies, network disabled"],
+  "boundary": "Same Windows host and existing container dependency image; not an independent clean-machine or public repository test. Final archive is regenerated after documentation/evidence updates."
+}

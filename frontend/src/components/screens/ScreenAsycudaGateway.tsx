@@ -27,7 +27,7 @@ const declarationFields = [
 
 export function ScreenAsycudaGateway({ onTriggerToast }: Props) {
   const { shipmentId } = useShipment();
-  const activeId = shipmentId ?? 'demo-shipment';
+  const activeId = shipmentId ?? '';
   const [readiness, setReadiness] = useState<CusdecReadiness | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -38,6 +38,7 @@ export function ScreenAsycudaGateway({ onTriggerToast }: Props) {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const refreshReadiness = useCallback(async () => {
+    if (!activeId) { setIsLoading(false); setReadiness(null); setLoadError('Select a dossier from Overview first.'); return; }
     setIsLoading(true);
     setLoadError(null);
     try {
@@ -129,7 +130,7 @@ export function ScreenAsycudaGateway({ onTriggerToast }: Props) {
         <div>
           <p className="text-xs font-semibold text-primary uppercase tracking-wide">Declaration readiness</p>
           <h1 className="text-2xl font-bold text-on-surface tracking-tight mt-1">CUSDEC export</h1>
-          <p className="text-sm text-on-surface-variant mt-1">Only validated declarations can be exported. Placeholder and demo values are never used.</p>
+          <p className="text-sm text-on-surface-variant mt-1">Prepare a reviewed revision with the prototype XML template. Official ASYCUDA acceptance has not been verified; synthetic dossiers remain test data.</p>
         </div>
         <div className="flex gap-2">
           <button onClick={() => void refreshReadiness()} disabled={isLoading}

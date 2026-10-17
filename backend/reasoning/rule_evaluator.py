@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from typing import Any, List
 import networkx as nx
 from reasoning.semantic_fallback import SemanticFallback
+from reasoning.comparison import numeric_equal
 
 
 @dataclass
@@ -65,7 +66,8 @@ class RuleEvaluator:
         entity_type = first.get("entity_type", "Value")
         if isinstance(left_value, (int, float)) and isinstance(right_value, (int, float)):
             difference = abs(float(left_value) - float(right_value))
-            if difference <= 0.01:
+            policy = self.graph.nodes[field_id].get('comparison_policy') if field_id else None
+            if numeric_equal(left_value, right_value, entity_type, policy):
                 return
             self.failures.append(RuleFailure(
                 rule_id="RULE_001_NUMERIC_MATCH", entity_type=entity_type,

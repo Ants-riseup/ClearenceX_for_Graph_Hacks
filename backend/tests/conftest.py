@@ -36,7 +36,7 @@ def schema():
 def account(tenant=None, role="reviewer"):
     email = f"{uuid.uuid4()}@example.test"
     user, password = create_user(email, tenant or str(uuid.uuid4()), role)
-    client = TestClient(app, headers={"Origin": "http://localhost:5173"})
+    client = TestClient(app, headers={"Origin": "http://localhost:5173"}, client=(f'test-{uuid.uuid4()}', 50000))
     csrf = client.get("/api/auth/csrf").json()["csrf_token"]
     result = client.post("/api/auth/login", json={"email": email, "password": password}, headers={"X-CSRF-Token": csrf})
     assert result.status_code == 200, result.text

@@ -1,0 +1,1 @@
+{"status": "passed", "postgres_dossiers_restored": 5, "schema_versions_restored": 4, "graph_snapshot_shipment_found": true, "source_data_deleted": false, "paid_calls": 0}

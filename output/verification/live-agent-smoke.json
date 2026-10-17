@@ -1,0 +1,276 @@
+{
+  "provider": "OpenAI",
+  "mode": "live API",
+  "model": "gpt-4.1-mini-2025-04-14",
+  "status": "completed",
+  "tool_names": [
+    "list_dossier_issues",
+    "get_field_evidence",
+    "propose_review_task"
+  ],
+  "result": {
+    "answer": "There is a conflict in the gross weight values for this shipment. The Commercial Invoice and Packing List documents both state the gross weight as 450 kg, while the Air Waybill states it as 440 kg. The consensus currently is 450 kg, but the discrepancy between 450 kg and 440 kg exceeds the allowable tolerance, leading to this conflict status. A review task has been proposed to resolve this conflict by human verification of the weights across these documents. No approval has been made yet.",
+    "cited_assertion_ids": [
+      "assertion:0ba2b53a-259b-461a-827d-efcd9440574b:GROSS_WEIGHT:0",
+      "assertion:24769672-a090-4b93-9a75-9e2cba19b788:GROSS_WEIGHT:0",
+      "assertion:b916d55c-bd8b-4e53-867c-c1eb5f8e3305:GROSS_WEIGHT:0"
+    ],
+    "uncertainties": [
+      "The true gross weight is uncertain due to conflicting document values between 440 kg and 450 kg."
+    ],
+    "tool_events": [
+      {
+        "tool": "list_dossier_issues",
+        "arguments": {},
+        "result": [
+          {
+            "canonical_field_id": "shipment:de55511a-3da1-4b93-b876-0986bf5c2799:field:GROSS_WEIGHT",
+            "comparison_policy": {
+              "version": "comparison-v2",
+              "weight_absolute_tolerance": "0.01",
+              "count_tolerance": "0",
+              "money_absolute_tolerance": "0.01",
+              "unit_policy": "Compare only compatible supplied units; mixed units require review.",
+              "authority_status": "prototype"
+            },
+            "entity_type": "GROSS_WEIGHT",
+            "label": "Gross Weight",
+            "status": "conflict",
+            "consensus_value": 450,
+            "unit": "kg",
+            "resolution_confidence": 0.0
+          },
+          {
+            "canonical_field_id": "shipment:de55511a-3da1-4b93-b876-0986bf5c2799:field:PACKAGE_COUNT",
+            "comparison_policy": {
+              "version": "comparison-v2",
+              "weight_absolute_tolerance": "0.01",
+              "count_tolerance": "0",
+              "money_absolute_tolerance": "0.01",
+              "unit_policy": "Compare only compatible supplied units; mixed units require review.",
+              "authority_status": "prototype"
+            },
+            "entity_type": "PACKAGE_COUNT",
+            "label": "Package Count",
+            "status": "pending",
+            "consensus_value": 12,
+            "unit": null,
+            "resolution_confidence": 0.0
+          }
+        ]
+      },
+      {
+        "tool": "get_field_evidence",
+        "arguments": {
+          "field_id": "shipment:de55511a-3da1-4b93-b876-0986bf5c2799:field:GROSS_WEIGHT"
+        },
+        "result": [
+          {
+            "assertion_id": "assertion:0ba2b53a-259b-461a-827d-efcd9440574b:GROSS_WEIGHT:0",
+            "document_id": "0ba2b53a-259b-461a-827d-efcd9440574b",
+            "document_type": "commercial_invoice",
+            "document_label": "Commercial Invoice",
+            "source_filename": "Commercial Invoice.pdf",
+            "entity_type": "GROSS_WEIGHT",
+            "raw_value": "450 kg",
+            "normalized_value": 450,
+            "unit": "kg",
+            "page": 1,
+            "bbox": [],
+            "extraction_confidence": 0.0,
+            "confidence_status": "not_measured",
+            "source_method": "synthetic_fixture",
+            "warnings": [
+              "Precomputed synthetic extraction; not live OCR."
+            ],
+            "ocr_text": "450 kg",
+            "canonical_field_id": "shipment:de55511a-3da1-4b93-b876-0986bf5c2799:field:GROSS_WEIGHT",
+            "is_consensus": true,
+            "is_outlier": false,
+            "variance": 0.0,
+            "active": true
+          },
+          {
+            "assertion_id": "assertion:24769672-a090-4b93-9a75-9e2cba19b788:GROSS_WEIGHT:0",
+            "document_id": "24769672-a090-4b93-9a75-9e2cba19b788",
+            "document_type": "awb",
+            "document_label": "Awb",
+            "source_filename": "Awb.pdf",
+            "entity_type": "GROSS_WEIGHT",
+            "raw_value": "440 kg",
+            "normalized_value": 440,
+            "unit": "kg",
+            "page": 1,
+            "bbox": [],
+            "extraction_confidence": 0.0,
+            "confidence_status": "not_measured",
+            "source_method": "synthetic_fixture",
+            "warnings": [
+              "Precomputed synthetic extraction; not live OCR."
+            ],
+            "ocr_text": "440 kg",
+            "canonical_field_id": "shipment:de55511a-3da1-4b93-b876-0986bf5c2799:field:GROSS_WEIGHT",
+            "is_consensus": true,
+            "is_outlier": false,
+            "variance": 0.0,
+            "active": true
+          },
+          {
+            "assertion_id": "assertion:b916d55c-bd8b-4e53-867c-c1eb5f8e3305:GROSS_WEIGHT:0",
+            "document_id": "b916d55c-bd8b-4e53-867c-c1eb5f8e3305",
+            "document_type": "packing_list",
+            "document_label": "Packing List",
+            "source_filename": "Packing List.pdf",
+            "entity_type": "GROSS_WEIGHT",
+            "raw_value": "450 kg",
+            "normalized_value": 450,
+            "unit": "kg",
+            "page": 1,
+            "bbox": [],
+            "extraction_confidence": 0.0,
+            "confidence_status": "not_measured",
+            "source_method": "synthetic_fixture",
+            "warnings": [
+              "Precomputed synthetic extraction; not live OCR."
+            ],
+            "ocr_text": "450 kg",
+            "canonical_field_id": "shipment:de55511a-3da1-4b93-b876-0986bf5c2799:field:GROSS_WEIGHT",
+            "is_consensus": true,
+            "is_outlier": false,
+            "variance": 0.0,
+            "active": true
+          }
+        ]
+      },
+      {
+        "tool": "propose_review_task",
+        "arguments": {
+          "field_id": "shipment:de55511a-3da1-4b93-b876-0986bf5c2799:field:GROSS_WEIGHT",
+          "evidence_ids": [
+            "assertion:0ba2b53a-259b-461a-827d-efcd9440574b:GROSS_WEIGHT:0",
+            "assertion:24769672-a090-4b93-9a75-9e2cba19b788:GROSS_WEIGHT:0",
+            "assertion:b916d55c-bd8b-4e53-867c-c1eb5f8e3305:GROSS_WEIGHT:0"
+          ],
+          "reason": "Conflict in gross weight values: Commercial Invoice and Packing List show 450 kg, while Air Waybill shows 440 kg. Needs review to determine correct gross weight."
+        },
+        "result": {
+          "id": "03178856-fc48-4995-a822-4cdc2df49314",
+          "field_id": "shipment:de55511a-3da1-4b93-b876-0986bf5c2799:field:GROSS_WEIGHT",
+          "evidence_ids": [
+            "assertion:0ba2b53a-259b-461a-827d-efcd9440574b:GROSS_WEIGHT:0",
+            "assertion:24769672-a090-4b93-9a75-9e2cba19b788:GROSS_WEIGHT:0",
+            "assertion:b916d55c-bd8b-4e53-867c-c1eb5f8e3305:GROSS_WEIGHT:0"
+          ],
+          "reason": "Conflict in gross weight values: Commercial Invoice and Packing List show 450 kg, while Air Waybill shows 440 kg. Needs review to determine correct gross weight.",
+          "status": "pending",
+          "expected_revision": 2,
+          "actor_id": "75e1c42a-c0fe-44d1-b39b-3cef0c902d1c",
+          "run_id": "a13bdcf9-dbf0-493c-b5fb-b519e220cfbd",
+          "created_at": 1792241513
+        }
+      }
+    ],
+    "citations": [
+      {
+        "assertion_id": "assertion:0ba2b53a-259b-461a-827d-efcd9440574b:GROSS_WEIGHT:0",
+        "document_id": "0ba2b53a-259b-461a-827d-efcd9440574b",
+        "document_type": "commercial_invoice",
+        "document_label": "Commercial Invoice",
+        "source_filename": "Commercial Invoice.pdf",
+        "entity_type": "GROSS_WEIGHT",
+        "raw_value": "450 kg",
+        "normalized_value": 450,
+        "unit": "kg",
+        "page": 1,
+        "bbox": [],
+        "extraction_confidence": 0.0,
+        "confidence_status": "not_measured",
+        "source_method": "synthetic_fixture",
+        "warnings": [
+          "Precomputed synthetic extraction; not live OCR."
+        ],
+        "ocr_text": "450 kg",
+        "canonical_field_id": "shipment:de55511a-3da1-4b93-b876-0986bf5c2799:field:GROSS_WEIGHT",
+        "is_consensus": true,
+        "is_outlier": false,
+        "variance": 0.0,
+        "active": true,
+        "content_url": "/api/documents/0ba2b53a-259b-461a-827d-efcd9440574b/content"
+      },
+      {
+        "assertion_id": "assertion:24769672-a090-4b93-9a75-9e2cba19b788:GROSS_WEIGHT:0",
+        "document_id": "24769672-a090-4b93-9a75-9e2cba19b788",
+        "document_type": "awb",
+        "document_label": "Awb",
+        "source_filename": "Awb.pdf",
+        "entity_type": "GROSS_WEIGHT",
+        "raw_value": "440 kg",
+        "normalized_value": 440,
+        "unit": "kg",
+        "page": 1,
+        "bbox": [],
+        "extraction_confidence": 0.0,
+        "confidence_status": "not_measured",
+        "source_method": "synthetic_fixture",
+        "warnings": [
+          "Precomputed synthetic extraction; not live OCR."
+        ],
+        "ocr_text": "440 kg",
+        "canonical_field_id": "shipment:de55511a-3da1-4b93-b876-0986bf5c2799:field:GROSS_WEIGHT",
+        "is_consensus": true,
+        "is_outlier": false,
+        "variance": 0.0,
+        "active": true,
+        "content_url": "/api/documents/24769672-a090-4b93-9a75-9e2cba19b788/content"
+      },
+      {
+        "assertion_id": "assertion:b916d55c-bd8b-4e53-867c-c1eb5f8e3305:GROSS_WEIGHT:0",
+        "document_id": "b916d55c-bd8b-4e53-867c-c1eb5f8e3305",
+        "document_type": "packing_list",
+        "document_label": "Packing List",
+        "source_filename": "Packing List.pdf",
+        "entity_type": "GROSS_WEIGHT",
+        "raw_value": "450 kg",
+        "normalized_value": 450,
+        "unit": "kg",
+        "page": 1,
+        "bbox": [],
+        "extraction_confidence": 0.0,
+        "confidence_status": "not_measured",
+        "source_method": "synthetic_fixture",
+        "warnings": [
+          "Precomputed synthetic extraction; not live OCR."
+        ],
+        "ocr_text": "450 kg",
+        "canonical_field_id": "shipment:de55511a-3da1-4b93-b876-0986bf5c2799:field:GROSS_WEIGHT",
+        "is_consensus": true,
+        "is_outlier": false,
+        "variance": 0.0,
+        "active": true,
+        "content_url": "/api/documents/b916d55c-bd8b-4e53-867c-c1eb5f8e3305/content"
+      }
+    ],
+    "proposed_action": {
+      "id": "03178856-fc48-4995-a822-4cdc2df49314",
+      "field_id": "shipment:de55511a-3da1-4b93-b876-0986bf5c2799:field:GROSS_WEIGHT",
+      "evidence_ids": [
+        "assertion:0ba2b53a-259b-461a-827d-efcd9440574b:GROSS_WEIGHT:0",
+        "assertion:24769672-a090-4b93-9a75-9e2cba19b788:GROSS_WEIGHT:0",
+        "assertion:b916d55c-bd8b-4e53-867c-c1eb5f8e3305:GROSS_WEIGHT:0"
+      ],
+      "reason": "Conflict in gross weight values: Commercial Invoice and Packing List show 450 kg, while Air Waybill shows 440 kg. Needs review to determine correct gross weight.",
+      "status": "pending",
+      "expected_revision": 2,
+      "actor_id": "75e1c42a-c0fe-44d1-b39b-3cef0c902d1c",
+      "run_id": "a13bdcf9-dbf0-493c-b5fb-b519e220cfbd",
+      "created_at": 1792241513
+    },
+    "usage": {
+      "input_tokens": 4644,
+      "output_tokens": 469,
+      "estimated_usd": 0.0026080000000000005
+    },
+    "model": "gpt-4.1-mini-2025-04-14",
+    "elapsed_ms": 21312
+  }
+}

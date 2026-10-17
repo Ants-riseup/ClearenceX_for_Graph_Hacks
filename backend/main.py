@@ -12,10 +12,12 @@ from database.connection import SessionLocal, init_db
 from context_app import models
 from context_app.config import ORIGINS, MAX_REQUEST_BYTES, SECURE_COOKIES
 from context_app.security import identity, check_csrf, authorize_dossier, router as auth_router
-from context_app.service import sync_one
+from context_app.service import sync_one, reconcile_graph_projections
 from context_app.router import router as context_router
 from api.routes import router
 from context_app.upload import router as upload_router, process_one_upload
+from context_app.workspace import router as workspace_router
+from context_app.exports import router as export_router
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +71,7 @@ async def ingestion_loop():
 @asynccontextmanager
 async def lifespan(app):
     init_db()
+    await asyncio.to_thread(reconcile_graph_projections)
     with SessionLocal() as db:
         db.query(models.AgentRun).filter(models.AgentRun.status == "running", models.AgentRun.updated_at < int(time.time()) - 120).update(
             {"status": "failed", "result": {"error": "Investigation interrupted. Start a new run."}})
@@ -129,6 +132,8 @@ async def protect(request: Request, call_next):
 
 app.include_router(auth_router)
 app.include_router(context_router)
+app.include_router(workspace_router)
+app.include_router(export_router)
 app.include_router(router)
 app.include_router(upload_router)
 app.add_middleware(BodyLimitMiddleware)

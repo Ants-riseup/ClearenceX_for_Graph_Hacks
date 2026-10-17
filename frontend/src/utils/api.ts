@@ -51,12 +51,12 @@ export function apiError(error: unknown, fallback = 'The request could not be co
   }
   return error instanceof Error ? error.message : fallback;
 }
-export async function uploadShipment(files: File[]): Promise<UploadResponse> {
+export async function uploadShipment(files: File[], signal?: AbortSignal): Promise<UploadResponse> {
   const formData = new FormData();
   files.forEach((file) => formData.append('files', file));
   // Override the default 'application/json' header — let axios auto-generate
   // the correct 'multipart/form-data' boundary for file uploads.
-  const uploadHeaders = { headers: { 'Content-Type': undefined } };
+  const uploadHeaders = { headers: { 'Content-Type': undefined }, signal };
   const { data } = await api.post<UploadResponse>('/upload', formData, uploadHeaders);
   return data;
 }
@@ -85,7 +85,9 @@ export async function getAuditTrail(id: string): Promise<{ shipment_id: string; 
   return data;
 }
 export async function exportAsycuda(id: string): Promise<Blob> {
-  const { data } = await api.get(`/shipments/${id}/asycuda-export`, {
+  const { data: state } = await api.get(`/shipments/${id}/context-status`);
+  const { data: artifact } = await api.post(`/shipments/${id}/exports`, { expected_revision: state.source_revision, request_id: crypto.randomUUID() });
+  const { data } = await api.get(`/shipments/${id}/exports/${artifact.export_id}/content`, {
     responseType: 'blob',
   });
   return data;
@@ -113,8 +115,9 @@ export function downloadBlob(blob: Blob, filename: string) {
   a.click(); a.remove();
   window.URL.revokeObjectURL(url);
 }
-export async function listDossiers(): Promise<{ dossiers: { dossier_id: string; status: string; created_at: string | null; document_count: number; documents: { document_id: string; original_name: string; document_type: string | null; status: string }[] }[] }> {
-  const { data } = await api.get('/dossiers');
+export interface DossierSummary { dossier_id: string; title: string; status: string; created_at: string | null; document_count: number; revision: number; graph_revision: number; documents: { document_id: string; original_name: string; document_type: string | null; status: string }[] }
+export async function listDossiers(params?: { search?: string; status?: string; offset?: number; limit?: number; sort?: string }, signal?: AbortSignal): Promise<{ dossiers: DossierSummary[]; total: number; offset: number; limit: number; has_more: boolean }> {
+  const { data } = await api.get('/dossiers', { params, signal });
   return data;
 }
 

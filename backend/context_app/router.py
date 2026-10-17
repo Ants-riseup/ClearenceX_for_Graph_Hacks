@@ -113,17 +113,20 @@ async def save_pdf(upload: UploadFile):
         content.extend(chunk)
         if len(content) > MAX_FILE_BYTES:
             raise HTTPException(413, "PDF exceeds the 20 MB limit.")
-    try:
-        if not content.startswith(b"%PDF-"):
-            raise ValueError()
-        reader = PdfReader(io.BytesIO(content), strict=True)
-        if reader.is_encrypted or not 1 <= len(reader.pages) <= MAX_PAGES:
-            raise ValueError()
-    except Exception as exc:
-        raise HTTPException(422, "PDF must be valid, unencrypted and at most 25 pages.") from exc
+    if not content.startswith(b'%PDF-'):
+        raise HTTPException(422, 'PDF signature is invalid.')
     path = DATA_ROOT / "private" / (str(uuid.uuid4()) + ".pdf")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(content)
+    try:
+        import asyncio, subprocess, sys, os
+        environment = {k: v for k, v in os.environ.items() if k.upper() in {'PATH', 'SYSTEMROOT', 'WINDIR', 'HOME', 'USERPROFILE', 'TEMP', 'TMP', 'LD_LIBRARY_PATH'}}
+        await asyncio.to_thread(subprocess.run, [sys.executable, '-m', 'context_app.validate_pdf', str(path)],
+            env=environment, cwd=Path(__file__).resolve().parents[1], timeout=10, check=True,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception as exc:
+        path.unlink(missing_ok=True)
+        raise HTTPException(422, 'PDF must parse within limits, be unencrypted and have at most 25 pages.') from exc
     return {"original_name": name, "file_path": str(path), "size": len(content), "content_hash": hashlib.sha256(content).hexdigest()}
 
 

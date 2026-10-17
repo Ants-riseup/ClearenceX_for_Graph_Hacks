@@ -1,23 +1,25 @@
 # Existing project and Graph Hacks implementation record
 
-This is an existing ClearanceX project extended during this session. No earlier work is represented as newly authored and no Git history has been rewritten. The working tree contained untracked application directories at the start; their presence is not proof of event eligibility. The team must clarify reuse eligibility with the organizers and publish accurate commit history.
+ClearanceX existed before this session. Existing source is not represented as original event work; no history has been rewritten. The team must clarify reuse eligibility and publish an accurate record. See the current completion report for acceptance boundaries.
 
-## Existing components retained
+## Existing foundation retained
 
-- React review, dossier, graph, discrepancy, audit and export screens.
-- FastAPI shipment routes and PostgreSQL dossier/extraction/metadata/goods models.
-- Local OCR/classification/entity extraction, normalization, source/canonical resolution, deterministic discrepancy explanations and template XML preparation.
+React review/dossier/graph/audit/export screens; FastAPI and PostgreSQL models; local OCR/classification/normalization and canonical resolution; deterministic discrepancy explanations; prototype XML preparation. Retaining a capability does not establish its quality on arbitrary documents.
 
-## New implementation in this session
+## Implementation delivered in this session
 
-- `backend/context_app`: opaque authentication/CSRF, tenant authorization, versioned state, durable graph outbox, FalkorDB projection and parameterized queries, source-change dependency traversal, human review tasks/decisions, graph memory, protected PDFs, honest bounded uploads, OpenAI agent tools/usage ledger and optional MCP adapter.
-- Context Agent UI, real sign-in/session guard, logout, PDF citations, precise validity states, repaired upload polling and removal of blanket upload fallback.
-- Integration/agent contract tests, isolated test services, local setup/admin commands, Compose application, corrected root commands/README and supporting documents.
+- Opaque authentication/CSRF, tenant/object/role authorization, private PDFs and bounded credential-free Linux PDF parser processes.
+- Actual indexed FalkorDB snapshots, immutable revisions, durable outbox/recovery and saved parameterized Cypher tools. Selective source-change invalidation with affected and unaffected approval checks.
+- Bounded live OpenAI tool selection and pending tasks, retrieved-ID citation constraints, one bounded final repair, traces, shared accounting/reservations and authenticated stdio MCP.
+- Ordered migrations; atomic ingestion; actual labeled digital multipage headers/pipe tables; shared Decimal comparison policy.
+- Real sign-in, source correction/history/type/reference controls, warnings, private review drafts, next unresolved, searchable paged listings, honest resumable processing monitoring and persisted workspace settings.
+- Immutable revision-bound export manifests, per-item batch results/ZIP, operational counters, backup/recovery scripts, isolated restore checks and a private-data-excluding source package.
+- Real database/security/agent tests; actual packaged live AI and MCP checks; six-dossier/twelve-question graph-versus-flat experiment with all debugging rounds preserved.
 
-## Known future work retained from the plan
+## Retained unfinished roadmap
 
-Broader company knowledge, multiple cooperating agents, full conversation-history management, JWT/external clients, MFA, calibrated extraction, full multipage goods extraction, scalable pagination/indexing/retention, hardened public uploads, managed production deployment, official customs validation and a final demo video remain separate deliverables. They are not claimed implemented merely because the plan recommends them.
+General scanned/arbitrary table extraction, calibrated confidence/geometry, full goods editing and preview, licensed maintained tariffs, cross-shipment Company Brain/multiple agents/vector search, full history/retention/deletion/email administration, JWT/external clients/MFA when needed, production HTTPS/load, official customs validation and public competition materials are not claimed complete.
 
-OpenAI is allowed and potentially billable. This implementation defaults to local infrastructure with live inference disabled until explicit configuration. It creates no paid hosting subscriptions and submits nothing to the event.
+Default infrastructure runs locally without paid hosting. OpenAI calls are optional and billable; this private configured environment enables the chosen inexpensive model with a $0.25 shared app ceiling. Recorded checks are about $0.11 estimated, not a provider balance statement. No event submission, public upload or subscription was created.
 
-Codex assisted with implementation and tests. The team must review the code, replace placeholders in final submission metadata, verify its rights to data/assets and explain the architecture and essential queries. The earlier root README is preserved as `Docs/LEGACY_ROOT_README.md` because it described a different Ants app.
+Codex assisted implementation and tests. The team must review/understand the code, disclose assistance, verify rights/licenses, distinguish inherited from original event work and prepare the final demonstration. The former unrelated root README is preserved in `Docs/LEGACY_ROOT_README.md`.

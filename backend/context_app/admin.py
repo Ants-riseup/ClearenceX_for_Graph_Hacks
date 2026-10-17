@@ -28,7 +28,7 @@ def create_user(email, tenant_name, role="reviewer", password=None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=["migrate", "create-user", "recover-uploads"])
+    parser.add_argument("command", choices=["migrate", "migration-status", "create-user", "recover-uploads", 'reconcile-graphs'])
     parser.add_argument("--email")
     parser.add_argument("--tenant", default="ClearanceX team")
     parser.add_argument("--role", choices=["reviewer", "viewer", "admin"], default="reviewer")
@@ -39,12 +39,22 @@ if __name__ == "__main__":
             parser.error("--email is required")
         user, password = create_user(args.email, args.tenant, args.role)
         print(f"Account: {user['email']}\nGenerated password (save privately): {password}")
+    elif args.command == 'migration-status':
+        from migrations import status
+        from database.connection import engine
+        for revision in status(engine):
+            print(revision['version'], revision['name'], revision['applied_at'])
+    elif args.command == 'reconcile-graphs':
+        from .service import reconcile_graph_projections
+        print('Missing graph projections queued:', reconcile_graph_projections())
     elif args.command == "recover-uploads":
         # Run only after stopping all API/ingestion processes.
         from database.models import Dossier, DossierDocument
+        from .models import BatchJob
         with SessionLocal() as db:
             db.query(Dossier).filter_by(status="processing").update({"status": "interrupted"})
             db.query(DossierDocument).filter_by(status="processing").update({"status": "error", "error_message": "Processing interrupted. Retry this upload."})
+            db.query(BatchJob).filter_by(status='processing').update({'status': 'interrupted'})
             db.commit()
         print("Interrupted uploads can now be retried. Start one API instance.")
     else:

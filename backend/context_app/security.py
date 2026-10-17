@@ -1,4 +1,5 @@
 import hashlib
+import hmac
 import secrets
 import time
 import uuid
@@ -82,6 +83,7 @@ def csrf(request: Request, response: Response):
         with SessionLocal() as db:
             session = db.get(Session, digest(existing))
             if session:
+                token = hmac.new(existing.encode(), b'clearancex-csrf-v1', hashlib.sha256).hexdigest()
                 session.csrf_hash = digest(token)
                 db.commit()
     cookie(response, CSRF_COOKIE, token, 28800)
@@ -120,7 +122,8 @@ def login(payload: Login, request: Request, response: Response):
         old_token = request.cookies.get(SESSION_COOKIE)
         if old_token:
             db.query(Session).filter_by(token_hash=digest(old_token)).delete()
-        token, csrf_token = secrets.token_urlsafe(32), secrets.token_urlsafe(32)
+        token = secrets.token_urlsafe(32)
+        csrf_token = hmac.new(token.encode(), b'clearancex-csrf-v1', hashlib.sha256).hexdigest()
         db.add(Session(token_hash=digest(token), user_id=user.id, tenant_id=member.tenant_id,
             csrf_hash=digest(csrf_token), created_at=now, last_seen=now, expires_at=now + 28800))
         db.commit()

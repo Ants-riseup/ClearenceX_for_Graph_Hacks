@@ -1,0 +1,18 @@
+{
+  "selected_suite": {
+    "passed": 48,
+    "skipped": 1,
+    "warnings": 1,
+    "seconds": 517.57
+  },
+  "followup_graph_recovery": {
+    "passed": 1,
+    "seconds": 18.19
+  },
+  "production_build": "passed",
+  "frontend_lint": "passed with warnings",
+  "live_flow": "passed",
+  "mcp_packaged": "passed",
+  "browser": "blocked by saved/managed origin policy",
+  "whole_workplan_complete": false
+}

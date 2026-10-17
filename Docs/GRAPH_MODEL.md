@@ -17,6 +17,11 @@ ReviewTask -DEPENDS_ON-> Assertion
 Decision -RESOLVES-> ReviewTask
 Decision -BASED_ON/DEPENDS_ON-> Assertion -DEPENDS_ON-> Document
 Memory -DERIVED_FROM/DEPENDS_ON-> Decision
+AgentRun -INVESTIGATED-> Shipment
+AgentRun -RETRIEVED-> Assertion
+AgentRun -PROPOSED-> ReviewTask
+AgentRun -RECALLED-> Memory
+ExportSnapshot -DEPENDS_ON-> Decision
 ```
 
 Graph properties contain scalar routing/identity fields and a JSON-encoded payload string. The payload preserves raw/normalized values, units, page, source IDs, prototype rule description and decision provenance. Private filesystem paths and PDF bytes are excluded. A missing bbox is kept empty rather than invented.
@@ -29,7 +34,9 @@ Impact retrieval must complete before the source change commits. If graph connec
 
 Essential executed queries live in `backend/context_app/queries/`: evidence, issues, rules, memory, impact and visualization. Input values use parameters. Labels/relationship types in projection come from fixed code allowlists. No model-generated Cypher is executed.
 
-The current prototype comparison policy is `comparison-v1`: absolute numeric tolerance 0.01 after normalization; incompatible units need review; role-aware conservative text comparison. This is a technical prototype rule, not a statement of customs requirements. The existing resolver retains a proposed consensus independently of human approval.
+The current prototype policy is `comparison-v2`: decimal comparison, exact integer counts, money tolerance 0.01 and a default absolute weight tolerance of 0.01. Administrators can version weight tolerance; affected approvals then require review. Mixed units need review. The same policy module drives canonical clustering and deterministic numeric checks. This is a technical prototype policy, not a customs regulation.
+
+Nodes also carry a fixed `node_type` and `ContextNode` label. Range indexes support snapshot/identity lookup. Artifact types do not depend on `labels()` ordering. Field context includes stale decision IDs and old source IDs so an agent can discover changed-source dependencies.
 
 ## Concurrency and durability
 

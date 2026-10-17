@@ -1,10 +1,12 @@
 # ClearanceX — Graph Hacks implementation work plan
 
-**Prepared:** 17 October 2026, Asia/Colombo  
-**Revised:** 17 October 2026 — stronger competition focus, guideline coverage preserved, and a balanced free/paid stack with OpenAI allowed  
-**Project:** ClearanceX, Team Ants  
-**Purpose:** Turn the existing document-reconciliation prototype into a FalkorDB-backed AI agent submission.  
-**Status:** Core competition implementation delivered locally; final live-model and submission validation remain. The original roadmap below is retained, including competition-recommended features. This status table distinguishes implemented behavior from future work; roadmap checklists are not blanket claims of completion.
+**Prepared:** 17 October 2026, Asia/Colombo
+**Revised:** 17 October 2026 — stronger competition focus, guideline coverage preserved, and a balanced free/paid stack with OpenAI allowed
+**Project:** ClearanceX, Team Ants
+**Purpose:** Turn the existing document-reconciliation prototype into a FalkorDB-backed AI agent submission.
+**Status:** Expanded local competition build implemented. Actual OpenAI investigations, graph-driven re-review, MCP transport, digital-PDF extraction, automated tests and private backup/restore have been exercised. The entire roadmap is **not yet fully complete**: browser verification is blocked by a saved policy, submission assets/external eligibility remain, and later production features retain their planned scope. See the completion report for the current evidence; original baseline findings below describe the project before these changes.
+
+**Completion audit:** [Detailed phase, APP-01–18 and guideline coverage report](Docs/GRAPH_HACKS_COMPLETION_REPORT.md). The entire plan is **not complete**; several P0 acceptance gates and later product features remain open.
 
 ## Implementation status — 17 October 2026
 
@@ -12,14 +14,14 @@
 |---|---|---|
 | Operational graph | Real tenant-scoped FalkorDB snapshots, parameterized Cypher, durable PostgreSQL outbox, revision checks, graph outage blocking | Real database integration tests pass; large-scale graph retention/load remains future work. |
 | Evidence and change impact | Protected synthetic PDFs, source assertions, pending human review, dependency traversal, selective stale approval and memory invalidation | Source correction invalidates the dependent weight approval and preserves the unrelated package decision in tests. Synthetic extraction is explicitly precomputed. |
-| Agent actions | Bounded OpenAI function-calling loop, six typed tools, citation checks, proposal persistence, cancellation and shared usage reservations | Scripted-provider contract test executes real graph tools. Live OpenAI success/quality remains unverified; configure a valid private key, model, prices and ceiling. |
-| Memory and coordination | Persistent approved memory, current/stale states, task ownership, human approval, optional six-tool stdio MCP adapter | Registration tested; third-party host operation and multi-agent handoff remain validation/extension tasks. |
+| Agent actions | Actual OpenAI tool selection, six tools, per-run citation enums, numeric checks, one bounded final repair, persisted proposals and shared usage reservations | Live initial and corrected-source investigations passed through the packaged API; model is `gpt-4.1-mini-2025-04-14`, with a $0.25 configured app ceiling. |
+| Memory and coordination | Persistent approved memory, current/stale states, reviewer approval, per-user drafts and six-tool stdio MCP | A real MCP client read evidence, proposed a task and was denied after logout. Multi-agent handoff and cross-shipment lessons remain future work. |
 | Security | Argon2id, revocable opaque sessions, CSRF/origin checks, tenant/role checks, private PDFs, bounded uploads, credential-isolated OCR subprocess | Security integration tests pass. JWT remains the documented external-client option. Public hostile-file isolation, HTTPS, MFA and production hardening remain future work. |
-| Existing app | Real sign-in, Context Agent screen, real audit/context data, source viewing, honest errors/statuses, corrected commands, local fonts and Compose setup | Production build and lint checks run; warnings and full legacy-screen polish are recorded separately. |
-| Extraction | Actual asynchronous upload status and retry, explicit extraction failure, local-only worker, removed automatic mock goods | Optional OCR dependency/container and real-document quality have not been validated. Default lightweight image supports the synthetic graph demo. |
-| Competition evidence | Demo instructions, implementation delta, schema and validation record | Organizer reuse eligibility, labeled model comparison, video and final submission remain team deliverables. No prize or eligibility is guaranteed. |
+| Existing app | Real sign-in, Context Agent, search/filter/sort/pagination, resumable upload monitoring, drafts, reference/type/replacement controls, versioned settings, operations and real batch preparation | Production builds and automated API checks pass. Visual checks are blocked by the browser policy; some legacy warnings and later UX work remain. |
+| Extraction | Actual digital-PDF text extraction across pages, explicit pipe-delimited goods rows, private bounded parser processes, transactional completion, warnings and preserved source locations | Real digital PDF and multipage/table-format tests pass. Scanned PaddleOCR and arbitrary table layouts are not validated; unsupported evidence remains review-needed. |
+| Competition evidence | Demo instructions, implementation delta, schema and validation record | Labeled live comparisons are recorded. Organizer reuse eligibility, team review, video and final submission remain team deliverables. No prize or eligibility is guaranteed. |
 
-**Validation:** 28 selected tests passed against real PostgreSQL/FalkorDB, plus three MCP proxy contract tests. Both container images build and the local stack starts; its background worker and actual graph issue query passed a packaged data-layer check. Automated browser access was denied by its permission gate, so visual validation remains pending. See [validation record](Docs/EVALUATION.md), [setup](Docs/LOCAL_SETUP.md), [demo](Docs/DEMO.md), and [existing-project delta](Docs/GRAPH_HACKS_DELTA.md) for exact scope and remaining gates. No paid model completion or public deployment has been performed.
+**Validation:** Final selected suite: **48 passed, 1 skipped**; follow-up regressions also pass; a Windows-only real-stdio test is skipped and replaced by a passing packaged Linux MCP smoke. Three live comparison rounds are preserved; the final graph run passed 12/12 specified checks and the flat baseline 10/12 on six synthetic dossiers. A separate 100-call warm graph benchmark is recorded. Paid OpenAI calls have now been made with user authorization; no public deployment or event submission has been performed. See [validation record](Docs/EVALUATION.md), [setup](Docs/LOCAL_SETUP.md), [demo](Docs/DEMO.md), and [existing-project delta](Docs/GRAPH_HACKS_DELTA.md) for exact results, cost and limitations.
 
 **Implementation map:** `backend/context_app/` contains authentication, graph projection, queries, decisions, memory, agent, budget, uploads and MCP; `frontend/src/components/screens/ScreenContextAgent.tsx` provides the review flow; `backend/tests/` holds integration contracts; `compose.yaml` packages the local app. PostgreSQL remains the authoritative record; graph-dependent actions require the matching FalkorDB revision.
 
@@ -946,4 +948,3 @@ Read for this plan:
 - [Ollama model candidate](https://ollama.com/library/qwen3:4b-instruct-2507-q4_K_M), [FAQ/local mode](https://docs.ollama.com/faq), [tool calling](https://docs.ollama.com/capabilities/tool-calling), [Docker Desktop terms](https://docs.docker.com/subscription-billing/desktop-license/), and [FalkorDB license](https://github.com/FalkorDB/FalkorDB/blob/master/LICENSE.txt) — optional free/local alternative and license checks.
 
 **Completion standard:** A judge can run the submitted project, authenticate, investigate a synthetic conflict using real FalkorDB context, verify citations and approve a proposal. A corrected source then invalidates the affected approval, preserves unrelated decisions and drives a new review task. Session memory reflects the change. The team can explain the new work, guideline coverage, measured results, model costs and remaining limitations accurately.
-

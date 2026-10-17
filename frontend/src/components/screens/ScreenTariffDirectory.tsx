@@ -26,6 +26,7 @@ export function ScreenTariffDirectory({ onTriggerToast }: Props) {
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-8 py-8 flex flex-col gap-6">
+      <p role="note" className="border border-error/30 rounded-xl p-4 text-sm">Sample reference content. Rates and regulatory examples on this screen are illustrative and unverified. This screen does not validate customs duties or authorize filing.</p>
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <div className="text-xs text-primary font-semibold uppercase tracking-wider">Page 09 / 10 • Tariff Directory</div>

@@ -48,9 +48,10 @@ export function ScreenDiscrepancies(_props: Props) {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const activeId = shipmentId ?? 'demo-shipment';
+  const activeId = shipmentId ?? '';
 
   useEffect(() => {
+    if (!activeId) { setLoading(false); setError('Select a dossier from Overview first.'); return; }
     setLoading(true);
     setError(null);
     getDiscrepancies(activeId)

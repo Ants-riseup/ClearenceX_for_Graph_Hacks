@@ -16,7 +16,7 @@ def call(method, path, **kwargs):
     token = os.getenv("CLEARANCEX_MCP_SESSION", "")
     if not token:
         raise ValueError("Set a valid user session in CLEARANCEX_MCP_SESSION; never expose it as a tool argument.")
-    with httpx.Client(base_url=base, timeout=10, follow_redirects=False) as client:
+    with httpx.Client(base_url=base, timeout=10, follow_redirects=False, trust_env=False) as client:
         client.cookies.set("clearancex_dev_session", token)
         if method != "GET":
             csrf = client.get("/api/auth/csrf")

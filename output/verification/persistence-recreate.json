@@ -1,0 +1,43 @@
+{
+  "status": "passed",
+  "action": "All four application containers forcibly recreated with named volumes preserved",
+  "before": {
+    "status": "passed",
+    "shipment_id": "50fe12be-1d54-4d41-a80b-cfc06ce6fb61",
+    "revision": 10,
+    "graph_revision": 10,
+    "selective_decision_validity": [
+      [
+        "shipment:50fe12be-1d54-4d41-a80b-cfc06ce6fb61:field:GROSS_WEIGHT",
+        "stale"
+      ],
+      [
+        "shipment:50fe12be-1d54-4d41-a80b-cfc06ce6fb61:field:PACKAGE_COUNT",
+        "current"
+      ]
+    ],
+    "current_memory_count": 1,
+    "private_pdfs_readable": 4,
+    "layer": "SQL, persisted graph query and private volume PDFs; no browser claim"
+  },
+  "after": {
+    "status": "passed",
+    "shipment_id": "50fe12be-1d54-4d41-a80b-cfc06ce6fb61",
+    "revision": 10,
+    "graph_revision": 10,
+    "selective_decision_validity": [
+      [
+        "shipment:50fe12be-1d54-4d41-a80b-cfc06ce6fb61:field:GROSS_WEIGHT",
+        "stale"
+      ],
+      [
+        "shipment:50fe12be-1d54-4d41-a80b-cfc06ce6fb61:field:PACKAGE_COUNT",
+        "current"
+      ]
+    ],
+    "current_memory_count": 1,
+    "private_pdfs_readable": 4,
+    "layer": "SQL, persisted graph query and private volume PDFs; no browser claim"
+  },
+  "paid_calls": 0
+}

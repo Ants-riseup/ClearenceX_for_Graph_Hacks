@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { lazy, Suspense, useCallback, useState } from 'react';
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { ShipmentProvider, useShipment } from './hooks/useShipment';
@@ -13,7 +13,7 @@ import { ScreenReviewWorkspace } from './components/screens/ScreenReviewWorkspac
 import { ScreenDiscrepancies } from './components/screens/ScreenDiscrepancies';
 import { ScreenBatchFiling } from './components/screens/ScreenBatchFiling';
 import { ScreenAsycudaGateway } from './components/screens/ScreenAsycudaGateway';
-import { ScreenKnowledgeGraph } from './components/screens/ScreenKnowledgeGraph';
+const ScreenKnowledgeGraph = lazy(() => import('./components/screens/ScreenKnowledgeGraph').then(m => ({ default: m.ScreenKnowledgeGraph })));
 import { ScreenAuditTrail } from './components/screens/ScreenAuditTrail';
 import { ScreenTariffDirectory } from './components/screens/ScreenTariffDirectory';
 import { ScreenSettings } from './components/screens/ScreenSettings';
@@ -53,7 +53,7 @@ function AppInner() {
             <Route path="/discrepancies" element={<ScreenDiscrepancies onTriggerToast={showToast} />} />
             <Route path="/batch-filing" element={<ScreenBatchFiling onTriggerToast={showToast} />} />
             <Route path="/asycuda-gateway" element={<ScreenAsycudaGateway onTriggerToast={showToast} />} />
-            <Route path="/knowledge-graph" element={<ScreenKnowledgeGraph onTriggerToast={showToast} />} />
+            <Route path="/knowledge-graph" element={<Suspense fallback={<p role="status" className="p-8">Loading graph explorer…</p>}><ScreenKnowledgeGraph onTriggerToast={showToast} /></Suspense>} />
             <Route path="/audit-trail" element={<ScreenAuditTrail onTriggerToast={showToast} />} />
             <Route path="/tariff-directory" element={<ScreenTariffDirectory onTriggerToast={showToast} />} />
             <Route path="/settings" element={<ScreenSettings onTriggerToast={showToast} />} />

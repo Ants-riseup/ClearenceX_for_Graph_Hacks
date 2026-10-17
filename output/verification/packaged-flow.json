@@ -1,0 +1,51 @@
+{
+  "transport": "actual packaged HTTP API",
+  "steps": [
+    "real_login",
+    "live_model_selected_graph_tools_and_proposed",
+    "private_PDF_delivery_and_two_reviewer_API_approvals",
+    "source_correction_stales_weight_preserves_packages_blocks_export",
+    "live_graph_change_impact_and_rereview_proposal",
+    "new_session_recalls_current_memory_excludes_stale"
+  ],
+  "live_runs": [
+    {
+      "status": "completed",
+      "model": "gpt-4.1-mini-2025-04-14",
+      "tools": [
+        "list_dossier_issues",
+        "get_field_evidence",
+        "propose_review_task"
+      ],
+      "usage": {
+        "input_tokens": 5839,
+        "output_tokens": 437,
+        "estimated_usd": 0.0030348
+      },
+      "citations": 3,
+      "proposed_action": true
+    },
+    {
+      "status": "completed",
+      "model": "gpt-4.1-mini-2025-04-14",
+      "tools": [
+        "list_dossier_issues",
+        "get_change_impact",
+        "get_field_evidence",
+        "propose_review_task"
+      ],
+      "usage": {
+        "input_tokens": 11071,
+        "output_tokens": 479,
+        "estimated_usd": 0.0051948
+      },
+      "citations": 3,
+      "proposed_action": true
+    }
+  ],
+  "status": "passed",
+  "shipment_id": "50fe12be-1d54-4d41-a80b-cfc06ce6fb61",
+  "tenant_id": "9fd7195c-4d10-4d83-9abc-9aec3a13f596",
+  "actor_id": "ef6ff957-721c-42e3-852d-a2f1e5f110df",
+  "estimated_usd": 0.0082296
+}

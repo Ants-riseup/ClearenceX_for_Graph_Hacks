@@ -9,7 +9,7 @@ from sqlalchemy import String
 from fastapi import APIRouter, File, UploadFile, Request, HTTPException
 from database.connection import SessionLocal
 from database.models import Dossier, DossierDocument
-from .models import ContextDossier
+from .models import ContextDossier, Tenant
 from .router import save_pdf
 from .config import MAX_FILES, MAX_REQUEST_BYTES, DATA_ROOT
 from .service import event, now, publish_extraction
@@ -31,6 +31,7 @@ async def upload(request: Request, files: list[UploadFile] = File(...)):
         state = {"documents": [], "archived_documents": [], "decisions": [], "tasks": [], "events": []}
         event(state, request.state.user["id"], "upload_accepted", {"document_count": len(saved)})
         with SessionLocal() as db:
+            state['comparison_policy'] = dict((db.get(Tenant, request.state.user['tenant_id']).settings or {}).get('comparison_policy', {}))
             db.add(ContextDossier(id=sid, tenant_id=request.state.user["tenant_id"], title="Uploaded dossier",
                 revision=1, graph_revision=0, created_at=now(), state=state))
             db.add(Dossier(id=uuid.UUID(sid), status="pending"))
@@ -118,9 +119,20 @@ def process_one_upload():
                 db.commit()
         finally:
             output.unlink(missing_ok=True)
-    with SessionLocal() as db:
-        db.get(Dossier, sid).status = "error" if errors else "done"
-        db.commit()
-    if not errors and successful:
-        publish_extraction(str(sid), successful)
+    try:
+        with SessionLocal() as db:
+            row = db.query(Dossier).filter_by(id=sid).with_for_update().one()
+            if not errors and successful:
+                publish_extraction(str(sid), successful, db=db)
+                row.status = "done"
+            else:
+                row.status = "error"
+            db.commit()
+    except Exception:
+        # Extraction results stay private and reusable. A publication failure
+        # must be retryable, never a false terminal success or stuck job.
+        with SessionLocal() as db:
+            db.get(Dossier, sid).status = "error"
+            db.commit()
+        raise
     return True

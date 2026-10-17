@@ -7,6 +7,7 @@ class Tenant(Base):
     __tablename__ = "cx_tenants"
     id = Column(String(64), primary_key=True)
     name = Column(String(200), nullable=False)
+    settings = Column(JSON, nullable=False, default=dict)
 
 
 class User(Base):
@@ -85,6 +86,28 @@ class UsageBudget(Base):
     reserved_usd = Column(Float, nullable=False, default=0)
     input_tokens = Column(BigInteger, nullable=False, default=0)
     output_tokens = Column(BigInteger, nullable=False, default=0)
+
+
+class ExportArtifact(Base):
+    __tablename__ = 'cx_export_artifacts'
+    id = Column(String(64), primary_key=True)
+    dossier_id = Column(String(64), ForeignKey('cx_context_dossiers.id'), nullable=False, index=True)
+    actor_id = Column(String(64), nullable=False)
+    source_revision = Column(Integer, nullable=False)
+    validity_state = Column(String(20), nullable=False, default='current')
+    created_at = Column(BigInteger, nullable=False)
+    payload = Column(JSON, nullable=False)
+    xml = Column(String, nullable=False)
+
+
+class BatchJob(Base):
+    __tablename__ = 'cx_batch_jobs'
+    id = Column(String(64), primary_key=True)
+    tenant_id = Column(String(64), ForeignKey('cx_tenants.id'), nullable=False, index=True)
+    actor_id = Column(String(64), nullable=False)
+    created_at = Column(BigInteger, nullable=False)
+    status = Column(String(20), nullable=False)
+    result = Column(JSON, nullable=False, default=dict)
 
 
 Index("cx_outbox_ready", Outbox.status, Outbox.next_attempt)

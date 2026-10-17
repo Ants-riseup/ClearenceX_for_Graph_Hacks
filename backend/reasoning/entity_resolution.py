@@ -11,6 +11,7 @@ from types import SimpleNamespace
 from typing import Any
 
 from ai_pipeline.party_roles import classify_party_role
+from reasoning.comparison import numeric_equal, describe
 
 
 # These are the shipment-level values available to the CUSDEC readiness check.
@@ -59,7 +60,7 @@ def _is_number(value: Any) -> bool:
 
 
 def _same_numeric(left: float, right: float) -> bool:
-    return abs(float(left) - float(right)) <= 0.01
+    return numeric_equal(left, right)
 
 
 def _legacy_consignee_role(document: dict[str, Any], entity: dict[str, Any]) -> str | None:
@@ -81,14 +82,14 @@ def _legacy_consignee_role(document: dict[str, Any], entity: dict[str, Any]) -> 
     )
 
 
-def _choose_consensus(assertions: list[dict[str, Any]]) -> tuple[Any, list[str]]:
+def _choose_consensus(assertions: list[dict[str, Any]], entity_type='', policy=None) -> tuple[Any, list[str]]:
     """Return a majority/high-confidence consensus and its assertion IDs."""
     numeric = all(_is_number(a["normalized_value"]) for a in assertions)
     clusters: list[list[dict[str, Any]]] = []
     for assertion in assertions:
         for cluster in clusters:
             exemplar = cluster[0]["normalized_value"]
-            same = _same_numeric(exemplar, assertion["normalized_value"]) if numeric else (
+            same = numeric_equal(exemplar, assertion["normalized_value"], entity_type, policy) if numeric else (
                 _text_key(exemplar) == _text_key(assertion["normalized_value"])
             )
             if same:
@@ -105,7 +106,7 @@ def _choose_consensus(assertions: list[dict[str, Any]]) -> tuple[Any, list[str]]
     return winner[0]["normalized_value"], [a["assertion_id"] for a in winner]
 
 
-def resolve_documents(shipment_id: str, documents: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def resolve_documents(shipment_id: str, documents: list[dict[str, Any]], policy=None) -> list[dict[str, Any]]:
     """Resolve extracted header fields into canonical shipment-level fields.
 
     Line items are intentionally not merged here: they require SKU/HS-code
@@ -150,13 +151,16 @@ def resolve_documents(shipment_id: str, documents: list[dict[str, Any]]) -> list
                 "page": entity.get("page", 1),
                 "bbox": entity.get("bbox", []),
                 "extraction_confidence": float(entity.get("extraction_confidence", 0.0)),
+                "confidence_status": entity.get("confidence_status", "heuristic_uncalibrated"),
+                "source_method": entity.get("source_method", document.get("extraction_method", "unknown")),
+                "warnings": document.get("warnings", []),
                 "ocr_text": entity.get("ocr_text", entity.get("value", "")),
                 "canonical_field_id": canonical_id,
             })
 
     resolved: list[dict[str, Any]] = []
     for entity_type, assertions in grouped.items():
-        consensus, consensus_ids = _choose_consensus(assertions)
+        consensus, consensus_ids = _choose_consensus(assertions, entity_type, policy)
         units = {str(a["unit"]).lower() for a in assertions if a.get("unit")}
         # A document may legitimately omit a field (for example, an AWB has no
         # invoice total). Absence is never represented as an assertion, so it
@@ -180,6 +184,7 @@ def resolve_documents(shipment_id: str, documents: list[dict[str, Any]]) -> list
 
         resolved.append({
             "canonical_field_id": assertions[0]["canonical_field_id"],
+            "comparison_policy": describe(policy),
             "entity_type": entity_type,
             "label": FIELD_LABELS.get(entity_type, entity_type.replace("_", " ").title()),
             "status": status,

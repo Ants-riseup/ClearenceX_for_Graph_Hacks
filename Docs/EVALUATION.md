@@ -1,29 +1,46 @@
 # Validation record
 
-Date: 17 October 2026. The exact validation status is updated as implementation checks complete. Code presence alone is not a passing result.
+Updated 17 October 2026 (Asia/Colombo). Evidence is in `output/verification/`. These are prototype measurements, not independent certification.
 
-## Completed observations
+## Current checks
 
-- All 28 selected tests passed in 144.25 seconds against real local PostgreSQL 16 and FalkorDB v4.12.0. They covered selective source-change invalidation, unrelated approval preservation, graph memory, private PDFs, tenant/session/CSRF denial, role/revocation boundaries, streamed request limits, replay/stale revision behavior, projection replay, graph outage, invented tool/citation rejection and concurrent usage reservations, plus compatible existing domain tests.
-- The React/TypeScript production build passed after the Context Agent/authentication changes.
-- Frontend dependency audit initially found a high-severity source-map-js advisory. The compatible update was applied; the follow-up audit reported zero vulnerabilities.
-- The optional MCP SDK loaded and registered six context tools. Full third-party host/model operation is a separate check.
-- Three additional MCP proxy tests passed in 3.24 seconds using an in-process mock HTTP transport: session/CSRF forwarding, denied request propagation and external-origin refusal. Together with the selected suite, 31 tests passed across these runs. This is not a live MCP-host test.
-- The installed core/test/MCP Python environment passed dependency consistency checks. An OSV batch advisory check reported no known advisories after compatible web/PDF/MCP dependency updates. This does not cover the optional legacy OCR dependency set or guarantee absence of vulnerabilities.
-- Frontend lint completed with warnings, including legacy effect patterns and fast-refresh boundaries. These are not represented as a warning-free result.
-- A read-only OpenAI account/model-access check returned HTTP 401 for the previous local key. No completion was sent and live inference is not counted as passing.
-- Both production container images built. Runtime startup exposed an obsolete relative upload-directory creation, which was removed. The rebuilt API runs as a non-root user; an image check confirmed private `.env` files are excluded. Dependency consistency passed.
-- The application Compose stack started successfully: PostgreSQL, FalkorDB and API were healthy; the frontend container was running and its Nginx configuration passed validation. A newly created synthetic dossier was projected by the actual background worker to graph revision 1, and an actual FalkorDB issue query returned the expected conflict.
-- Automated browser access to `http://localhost:8080` was denied by the browser permission gate. No alternate browser method was attempted. Visual rendering and click-through validation remain pending; the container/data-layer results above do not substitute for that check.
+- Final selected suite: **48 passed, 1 skipped, 1 deprecation warning**, 517.57 seconds. Tests run against isolated real PostgreSQL and FalkorDB. Coverage includes tenant/role/session/CSRF boundaries, private PDFs, request limits, atomic ingestion, comparisons, migrations, settings, drafts, selective invalidation, concurrency, immutable exports, graph recovery and agent contracts. Provider contract tests use an explicitly scripted provider; separate live results follow.
+- Windows stdio MCP test is skipped because its child HTTP service timed out. A **real stdio MCP -> authenticated packaged HTTP -> FalkorDB** check passed in Linux: six tools, three assertions, pending task and denied replay after logout (`packaged-mcp.json`). This does not prove every third-party MCP host works.
+- Production React/TypeScript build and both container builds pass. Lint passes with warnings. A graph-library chunk remains over 500 kB. No claim of a warning-free build.
+- Core/test/MCP dependency consistency and the earlier advisory check passed; optional legacy OCR dependencies were outside that check.
+- Backup was restored into an isolated PostgreSQL database and separate FalkorDB container. Five dossiers, four migration records, graph readability and 16 PDF reference/hash checks passed (`restore-check.json`, `pdf-restore-check.json`). The original application database was not replaced.
+- Browser verification is blocked by the app's saved/managed origin policy, even after user permission. API/container proof is not visual or click-through proof.
 
-## Test boundaries
+## Actual model and application flow
 
-`npm test` selects the new integration/agent contract tests plus existing canonical resolution, CUSDEC readiness and XML tests. The agent contract uses a clearly labeled scripted provider response while executing real graph queries and persistence. It does not prove an actual OpenAI model will choose the correct tools.
+Model: `gpt-4.1-mini-2025-04-14`. Rates configured for measured estimates: $0.40 input / $1.60 output per million tokens, as listed in [OpenAI model documentation](https://developers.openai.com/api/docs/models/gpt-4.1-mini). Rates and access can change. The shared application ceiling is **$0.25**, with no automatic larger-model fallback.
 
-Live OpenAI quality, token prices/account access, real OCR quality, optional OCR container build, GPU/local model inference, production HTTPS, adversarial upload isolation, concurrent load, full restore and official customs acceptance are not established by these tests. No paid model calls or public deployment have been performed in this implementation session.
+`packaged-flow.json` records a successful real HTTP flow: login; model-selected issue/evidence tools and persisted proposal; protected PDF delivery; two approvals through the reviewer API; a source correction; dependent weight approval made stale while package approval remains current; export blocking; live change-impact investigation and a new proposal; logout/login and correct current memory recall. The two runs cost an estimated **$0.0082296**. Approvals were automated reviewer API requests, not human browser clicks.
 
-## Comparison protocol still required before performance claims
+Earlier live attempts failed citation/numeric validation. They are retained in usage accounting; they are not relabeled successful. The runtime now restricts citation IDs to retrieved evidence and allows at most one final-answer repair within its turn/time/budget limits. A separate initial live smoke cost $0.002608 (`live-agent-smoke.json`).
 
-Create six labeled synthetic cases and twelve questions with expected field state, citations, action and abstention outcome. Compare graph-backed retrieval with a reasonable flat-text baseline using the same model, facts and context budget. Include corrected evidence and an unrelated decision. Run source-dependency edge ablation separately.
+## Six-dossier / twelve-question experiment
 
-Publish each outcome, correct/expected counts, observed token usage, estimated charges and median/max run latency. Use a separately described repeated-call protocol before reporting p95. No accuracy gain, response-time guarantee or customs-rejection reduction is claimed here.
+Synthetic cases: matching values, conflicting weights, missing net weight, ambiguous carrier/consignee text, superseded approval with an unrelated current approval, and hostile document instructions. Both modes use the same model and final task prompt. The graph harness selects typed retrieval by fixed question; it is not the autonomous tool-selection experiment above. The flat baseline receives serialized dossier context.
+
+| Retained run | Graph correct | Flat correct | Combined estimated cost | Interpretation |
+|---|---:|---:|---:|---|
+| v1 | 9/12 | 7/12 | $0.0240664 | Ambiguous abstention scoring and graph node-type issue discovered. |
+| v2 | 11/12 | 11/12 | $0.0249128 | Same clarified prompt in both modes; stale-source case still failed. |
+| v3 | 12/12 | 10/12 | $0.0271376 | Richer graph dependency/stale-artifact context. |
+
+All runs are preserved as `evaluation-v1.json` through `evaluation-v3.json`. The dataset was used during debugging; **it is not held out**. Twelve synthetic questions do not establish a general accuracy advantage or production extraction quality. V3 graph retrieval cited 23/23 expected evidence hits; the flat run also hit those sources but included an archived source as current and failed another field-status case. Median end-to-end model latency was about 2.38 seconds in both modes; provider variability and tiny sample size limit comparison.
+
+Latest warm graph benchmark, including the new missing-snapshot preflight: five warmups then 100 sequential evidence queries on one three-assertion synthetic dossier. Median **2.68 ms**, nearest-rank p95 **4.48 ms**, maximum **5.15 ms** (`graph-benchmark.json`). Earlier before-preflight measurements are preserved separately. This is not a load, cold-start, large-data or cross-version benchmark.
+
+## Spending and boundaries
+
+Recorded host evaluations/smokes total $0.0787248 estimated. The packaged application's shared ledger records $0.03133 estimated, including failed runs, with zero outstanding reservation (`application-usage.json`). Combined recorded estimate: **about $0.11**. The provider bill and remaining account credit were not independently fetched; the application's ceiling does not cover unrelated provider activity or the separate capped evaluation harness.
+
+Digital labeled PDFs and explicit pipe-format multipage goods tables are tested. General scanned OCR, arbitrary commercial table layouts, calibrated confidence, accurate bounding boxes, maintained tariff advice, official customs acceptance, production HTTPS/load and public submission are not established. No public deployment or competition submission was performed.
+
+## Final packaging and persistence
+
+All four application containers were forcibly recreated with the named volumes preserved. The live-flow dossier remained at revision 10, with matching graph revision, stale weight approval, current package approval, one current memory record and four readable private PDFs (`persistence-recreate.json`).
+
+The allowlisted source ZIP was extracted to a new folder. Fresh frontend dependency installation reported zero vulnerabilities, TypeScript/Vite build passed, Python source compilation passed, and archived backend imports passed using the packaged dependency image with networking disabled. This checks archive completeness on this host; an independent clean-machine/public-checkout review remains pending (`source-package-check.json`).

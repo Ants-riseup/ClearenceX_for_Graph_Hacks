@@ -21,6 +21,5 @@ def get_db():
 
 def init_db():
     """Binds the Python models to the database."""
-    from .models import Base
-    from context_app import models
-    Base.metadata.create_all(bind=engine)
+    from migrations import upgrade
+    upgrade(engine)

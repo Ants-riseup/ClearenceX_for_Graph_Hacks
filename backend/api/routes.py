@@ -188,10 +188,14 @@ def _get_verified_line_items(shipment_id: str) -> list[dict]:
 
 def _resolve_shipment_fields(shipment_id: str, documents: list) -> list:
     """Resolve source assertions, then apply persisted reviewer decisions."""
-    from reasoning.entity_resolution import apply_manual_resolutions, resolve_documents
-
-    fields = resolve_documents(shipment_id, documents)
-    return apply_manual_resolutions(fields, _get_field_resolutions(shipment_id))
+    from context_app.models import ContextDossier
+    from context_app.graph import fields
+    from database.connection import SessionLocal
+    with SessionLocal() as db:
+        row = db.get(ContextDossier, shipment_id)
+        if not row:
+            raise HTTPException(404, 'Dossier not found.')
+        return fields(row.state, shipment_id)
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -474,8 +478,11 @@ async def save_cusdec_line_item(shipment_id: str, item: dict, request: Request):
     import math
     if not all(math.isfinite(v) for v in (quantity, unit_price, total_price)) or quantity <= 0 or unit_price < 0 or total_price <= 0:
         raise HTTPException(status_code=400, detail="Quantity and total price must be positive; unit price cannot be negative.")
-    if abs(quantity * unit_price - total_price) > max(total_price * 0.02, 0.01):
-        raise HTTPException(status_code=400, detail="Total price must match quantity × unit price within 2%.")
+    from decimal import Decimal, ROUND_HALF_UP
+    expected_total = (Decimal(str(item['quantity'])) * Decimal(str(item['unit_price']))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    supplied_total = Decimal(str(item['total_price'])).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    if expected_total != supplied_total:
+        raise HTTPException(status_code=400, detail="Total price must equal quantity × unit price rounded to two decimals (half up).")
 
     try:
         from database.connection import SessionLocal
@@ -589,28 +596,12 @@ async def get_audit_trail(shipment_id: str):
 
 @router.get("/shipments/{shipment_id}/asycuda-export")
 async def export_asycuda(shipment_id: str, request: Request):
-    """Template-based preparation, with current evidence and a reviewer gate."""
-    from context_app.exporting import readiness, metadata, line_items
+    """Read-only compatibility endpoint; creation now requires POST and CSRF."""
     from context_app.security import authorize_dossier
-    from context_app.service import require_current, event
-    from context_app.graph import fields
-    from reasoning.cusdec_xml import generate_cusdec_xml
     from database.connection import SessionLocal
-    import copy
     with SessionLocal() as db:
-        row = authorize_dossier(db, shipment_id, request.state.user, write=True, lock=True)
-        require_current(row)
-        state = readiness(db, row)
-        if not state["export_allowed"]:
-            raise HTTPException(422, {"message": "Resolve readiness blockers before export.", "readiness": state})
-        xml = generate_cusdec_xml(fields(row.state, row.id), metadata(db, row.id), line_items(db, row.id))
-        data = copy.deepcopy(row.state)
-        event(data, request.state.user["id"], "template_exported", {"revision": row.revision})
-        row.state = data
-        db.commit()
-        return Response(content=xml, media_type="application/xml", headers={
-            "Content-Disposition": f'attachment; filename="CUSDEC_{shipment_id[:8]}_r{row.revision}.xml"',
-            "Cache-Control": "no-store"})
+        authorize_dossier(db, shipment_id, request.state.user, write=True)
+    raise HTTPException(410, 'Use POST /api/shipments/{id}/exports for a versioned private snapshot.')
 
 
 @router.get("/shipments/{shipment_id}/cusdec-readiness")
@@ -628,25 +619,40 @@ async def get_cusdec_readiness(shipment_id: str, request: Request):
 # ══════════════════════════════════════════════════════════════════
 
 @router.get("/dossiers")
-async def list_dossiers(request: Request, search: str = "", status: str = "", offset: int = 0):
+async def list_dossiers(request: Request, search: str = "", status: str = "", offset: int = 0, limit: int = 20, sort: str = "newest"):
     from context_app.models import ContextDossier
     from database.connection import SessionLocal
     from datetime import datetime, timezone
+    from sqlalchemy import case, func, String
+    from database.models import Dossier, DossierDocument
     with SessionLocal() as db:
-        query = db.query(ContextDossier).filter_by(tenant_id=request.state.user["tenant_id"])
+        actual = case((Dossier.id.is_not(None), Dossier.status), else_=case(
+            (func.json_array_length(ContextDossier.state['documents']) > 0, 'done'), else_='pending'))
+        query = db.query(ContextDossier, actual.label('processing_status')).outerjoin(
+            Dossier, ContextDossier.id == Dossier.id.cast(String)).filter(ContextDossier.tenant_id == request.state.user['tenant_id'])
         if search:
             query = query.filter(ContextDossier.title.ilike("%" + search[:100] + "%"))
+        if status:
+            if status not in {'done', 'pending', 'processing', 'error', 'interrupted'}:
+                raise HTTPException(422, 'Unknown processing status.')
+            query = query.filter(actual == status)
+        ordering = {'newest': ContextDossier.created_at.desc(), 'oldest': ContextDossier.created_at.asc(), 'title': ContextDossier.title.asc()}
+        if sort not in ordering:
+            raise HTTPException(422, 'Unknown dossier sort order.')
+        total = query.count()
+        limit, offset = max(1, min(50, limit)), max(0, offset)
         result = []
-        for row in query.order_by(ContextDossier.created_at.desc()).offset(max(0, offset)).limit(50):
+        for row, actual_status in query.order_by(ordering[sort], ContextDossier.id).offset(offset).limit(limit):
             docs = row.state.get("documents", [])
-            actual_status = "done" if docs else "pending"
-            if status and actual_status != status:
-                continue
+            if not docs:
+                docs = [{'document_id': str(d.id), 'source_filename': d.original_name, 'document_type': d.document_type or 'unknown', 'status': d.status}
+                    for d in db.query(DossierDocument).filter_by(dossier_id=uuid.UUID(row.id))]
             result.append({"dossier_id": row.id, "title": row.title, "status": actual_status,
                 "created_at": datetime.fromtimestamp(row.created_at, timezone.utc).isoformat(), "document_count": len(docs),
                 "documents": [{"document_id": d["document_id"], "original_name": d.get("source_filename", "document.pdf"),
-                    "document_type": d["document_type"], "status": "done"} for d in docs]})
-        return {"dossiers": result}
+                    "document_type": d["document_type"], "status": d.get('status', 'done')} for d in docs],
+                'revision': row.revision, 'graph_revision': row.graph_revision})
+        return {"dossiers": result, 'total': total, 'offset': offset, 'limit': limit, 'has_more': offset + len(result) < total}
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -685,9 +691,14 @@ ACTIVE_RULES = [
 ]
 
 @router.get("/rules/active", response_model=List[dict])
-async def get_active_rules():
-    return [{"id": "comparison-v1", "label": "Prototype field comparison", "status": "Prototype",
-        "description": "Numeric absolute tolerance 0.01 in compatible units; conservative text/role matching. Not a customs regulation."}]
+async def get_active_rules(request: Request):
+    from context_app.models import Tenant
+    from database.connection import SessionLocal
+    from reasoning.comparison import describe
+    with SessionLocal() as db:
+        policy = describe((db.get(Tenant, request.state.user['tenant_id']).settings or {}).get('comparison_policy'))
+    return [{"id": policy['version'], "label": "Prototype field comparison", "status": "Prototype",
+        "description": f"Absolute weight tolerance {policy['weight_absolute_tolerance']}; integer counts; decimal amounts; mixed units require review. Not a customs regulation."}]
 
 @router.post('/shipments/{shipment_id}/discrepancies/{discrepancy_id}/resolve')
 async def resolve_discrepancy(shipment_id: str, discrepancy_id: str, decision: dict):

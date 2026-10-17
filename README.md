@@ -45,7 +45,7 @@ MODEL_OUTPUT_USD_PER_MILLION=verified_output_rate
 
 Recreate the API with `docker compose --env-file .env.graphhacks up -d api`. Choose a currently available model supporting Chat Completions function calls/structured outputs; verify its current prices. Do not copy the placeholder values above literally. The previous `gpt-4o-mini` default is not assumed to be an appropriate current model.
 
-The agent reserves a conservative per-call cost in PostgreSQL, enforces six tools, one nonparallel call at a time, 600 output tokens per request, a bounded context and no automatic retries/model escalation. The application ledger is shared across processes. Unknown outcomes remain charged at their reserved upper bound. Prices must cover the selected model's complete billed token categories. This is a conservative application control, not a guarantee about a provider invoice or other applications using the same key. Never put keys in the frontend. [Official OpenAI pricing](https://developers.openai.com/api/docs/pricing).
+The agent reserves a conservative per-call cost in PostgreSQL, enforces six tools, one nonparallel call at a time, 600 output tokens per request, a bounded context and at most one final-answer repair, no provider retries or model escalation. The application ledger is shared across processes. Unknown outcomes remain charged at their reserved upper bound. Prices must cover the selected model's complete billed token categories. This is a conservative application control, not a guarantee about a provider invoice or other applications using the same key. Never put keys in the frontend. [Official OpenAI pricing](https://developers.openai.com/api/docs/pricing).
 
 ## Architecture and graph model
 
@@ -94,7 +94,11 @@ The tests exercise real database/graph queries, selective invalidation, dependen
 
 Implemented: real sign-in, private sources, graph-backed context screen, persistent decisions/memory/events, source replacement, real graph visualization, upload error handling, bounded polling, explicit OCR failures, shared spending controls and reproducible Compose configuration.
 
-Sample batch filing and tariff references remain labeled/nonoperational. Settings describe the actual fixed prototype comparison policy. JWT, MFA, richer table extraction, managed hosting, multi-agent coordination, company-wide knowledge and large-scale calibration remain roadmap items. A local MCP adapter is included separately; see setup notes for its validation status.
+The dossier list supports search, filters, sorting and pagination. Upload monitoring cancels on navigation and can resume or retry saved jobs. Review drafts autosave privately per user; source replacement/type corrections preserve history. Administrators can save versioned workspace settings; weight-policy changes make affected approvals stale. Real batch preparation persists each dossier's result and downloads available reviewed XML files with a manifest. Export snapshots record their source revision, reviewer and dependencies and become stale after relevant changes.
+
+Digital PDFs are parsed locally from actual text, including labeled fields across pages and explicitly pipe-delimited goods tables. Scanned documents still require the optional PaddleOCR profile; arbitrary layouts and calibrated extraction quality are not claimed. Tariff references remain samples. JWT, MFA, managed hosting, multiple cooperating agents, company-wide knowledge and full production retention remain roadmap items.
+
+The packaged MCP smoke uses a real stdio client, authenticated HTTP and FalkorDB; source reading, proposal creation and logout denial passed. Live initial and corrected-source OpenAI investigations also passed through the packaged API. See the [completion report](Docs/GRAPH_HACKS_COMPLETION_REPORT.md) for exact scope and remaining items.
 
 ## Submission materials
 
@@ -102,6 +106,7 @@ Sample batch filing and tariff references remain labeled/nonoperational. Setting
 - [Existing/new-work record](Docs/GRAPH_HACKS_DELTA.md)
 - [Demo script](Docs/DEMO.md)
 - [Evaluation report](Docs/EVALUATION.md)
+- [Completion report](Docs/GRAPH_HACKS_COMPLETION_REPORT.md)
 
 Primary intended track: Agents That Act on Connected Data. Enter memory/other tracks only for demonstrated capabilities. Confirm existing-project reuse eligibility with the organizers. The team must register, verify licensing/data permissions, record the actual working demo and submit; no submission or public deployment is performed by this repository.
 

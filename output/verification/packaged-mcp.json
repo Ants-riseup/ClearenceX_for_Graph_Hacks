@@ -1,0 +1,9 @@
+{
+  "status": "passed",
+  "transport": "real stdio MCP -> authenticated HTTP -> real FalkorDB",
+  "tools": 6,
+  "assertions": 3,
+  "task_status": "pending",
+  "logout_replay": "denied",
+  "paid_calls": 0
+}

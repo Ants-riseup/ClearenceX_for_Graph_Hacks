@@ -14,3 +14,9 @@ Use only the generated synthetic dossier. Account setup and model configuration 
 Record a short video matching any actual submission-form limit. Start with the conflict/change result, then show the evidence and action. Include the relevant Cypher file, passing check results and one denied cross-tenant access case. Trim idle time honestly; do not imply unmeasured latency. A video is a team deliverable and has not been fabricated by the implementation.
 
 For repeat demonstrations, create a fresh synthetic example. Existing real dossiers are never reset/deleted by a demo action. Reapplying the correction creates another explicit source revision and is not a hidden fixture reset.
+
+## Additional implemented controls
+
+Show listing search/status/sort and the real document-count processing stages. In Context Agent, show reference/type correction, replacement and source history, extraction warnings, raw versus normalized values, private saved review reason and next unresolved field. Workspace settings are persisted and versioned; changing weight tolerance invalidates affected approvals. Batch preparation accepts selected dossiers and reports each item, including blocked ones; download produces a ZIP with a manifest, not customs transmission.
+
+The packaged automated live/API flow and MCP checks have passed; visual clicking remains blocked by browser policy in this session. Use the team technical brief and submission checklist to prepare an actual human-recorded demo. Never record an API script as a browser walkthrough.

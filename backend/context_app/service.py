@@ -4,7 +4,7 @@ import uuid
 from fastapi import HTTPException
 from sqlalchemy import select
 from database.connection import SessionLocal
-from .models import ContextDossier, Outbox, AgentRun
+from .models import ContextDossier, Outbox, AgentRun, Tenant, ExportArtifact
 from .security import authorize_dossier
 from .graph import GraphRepository, fields, all_assertions
 
@@ -19,6 +19,8 @@ def event(state, actor, action, details=None):
 
 
 def enqueue(db, row, state, actor, action, details=None):
+    if action in {'source_replaced', 'decision_approved', 'declarationmetadata_saved', 'cusdeclineitem_saved', 'workspace_settings_changed', 'extraction_completed'}:
+        db.query(ExportArtifact).filter_by(dossier_id=row.id, validity_state='current').update({'validity_state': 'stale'})
     event(state, actor, action, details)
     row.state = state
     row.revision += 1
@@ -31,6 +33,8 @@ def create_dossier(user, documents=None, title="Shipment dossier", shipment_id=N
     state = {"documents": documents or [], "archived_documents": [], "tasks": [], "decisions": [], "events": []}
     event(state, user["id"], "dossier_created", {"source": "synthetic_fixture" if documents else "upload"})
     with SessionLocal() as db:
+        tenant = db.get(Tenant, user['tenant_id'])
+        state['comparison_policy'] = dict((tenant.settings or {}).get('comparison_policy', {}))
         db.add(ContextDossier(id=sid, tenant_id=user["tenant_id"], title=title, revision=1,
             graph_revision=0, state=state, created_at=now()))
         db.flush()
@@ -39,13 +43,17 @@ def create_dossier(user, documents=None, title="Shipment dossier", shipment_id=N
     return sid
 
 
-def publish_extraction(sid, documents):
-    with SessionLocal() as db:
-        row = db.query(ContextDossier).filter_by(id=sid).with_for_update().one()
-        state = copy.deepcopy(row.state)
-        state["documents"] = documents
-        enqueue(db, row, state, "pipeline", "extraction_completed")
-        db.commit()
+def publish_extraction(sid, documents, db=None):
+    """Accept a caller transaction so job completion and publication are atomic."""
+    if db is None:
+        with SessionLocal() as session:
+            publish_extraction(sid, documents, db=session)
+            session.commit()
+        return
+    row = db.query(ContextDossier).filter_by(id=sid).with_for_update().one()
+    state = copy.deepcopy(row.state)
+    state["documents"] = documents
+    enqueue(db, row, state, "pipeline", "extraction_completed")
 
 
 def sync_one():
@@ -70,6 +78,33 @@ def sync_one():
     return True
 
 
+def reconcile_graph_projections(shipment_id=None):
+    """PostgreSQL revisions recover a missing/older graph snapshot after restart."""
+    queued = 0
+    with SessionLocal() as db:
+        query = db.query(ContextDossier)
+        if shipment_id is not None:
+            query = query.filter(ContextDossier.id == shipment_id)
+        for row in query.order_by(ContextDossier.id).with_for_update():
+            if not row.state.get('documents'):
+                continue
+            try:
+                result = GraphRepository(row.tenant_id).graph.ro_query(
+                    'MATCH (s:Shipment {id:$sid, revision:$revision}) RETURN s.id LIMIT 1',
+                    params={'sid': row.id, 'revision': row.revision}, timeout=3000).result_set
+                intact = bool(result)
+            except Exception:
+                intact = False
+            if not intact:
+                row.graph_revision = 0
+                pending = db.query(Outbox).filter(Outbox.dossier_id == row.id, Outbox.status.in_(['pending', 'retry'])).first()
+                if not pending:
+                    db.add(Outbox(id=str(uuid.uuid4()), dossier_id=row.id, revision=row.revision, status='pending', attempts=0, next_attempt=0))
+                queued += 1
+        db.commit()
+    return queued
+
+
 def require_current(row, expected=None):
     if expected is not None and row.revision != expected:
         raise HTTPException(409, "The dossier changed. Refresh context and investigate again.")
@@ -84,7 +119,8 @@ def context_view(sid, user):
             "graph_revision": row.graph_revision, "status": "synced" if row.revision == row.graph_revision else "context_pending",
             "tasks": row.state.get("tasks", []), "decisions": row.state.get("decisions", []),
             "events": row.state.get("events", []),
-            "documents": [{k: d.get(k) for k in ("document_id", "source_filename", "document_type", "revision", "fixture")} for d in row.state.get("documents", [])]}
+            'archived_documents': [{k: d.get(k) for k in ('document_id', 'source_filename', 'document_type', 'revision')} for d in row.state.get('archived_documents', [])],
+            "documents": [{k: d.get(k) for k in ("document_id", "source_filename", "document_type", "revision", "fixture", 'warnings', 'extraction_method', 'line_items')} for d in row.state.get("documents", [])]}
 
 
 def graph_tool(sid, user, name, expected=None, **arguments):

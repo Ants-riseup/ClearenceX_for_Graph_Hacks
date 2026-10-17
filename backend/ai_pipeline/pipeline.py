@@ -263,7 +263,7 @@ class AIPipeline:
                 normalized if normalized is not None else raw_value
             )
 
-            key = (entity_type, str(comparison_value))
+            key = (entity_type, str(comparison_value), entity.get('page', 1), tuple(entity.get('bbox') or []))
 
             existing = grouped.get(key)
 

@@ -1,0 +1,609 @@
+{
+  "mode": "live OpenAI, fixed retrieval comparison",
+  "model": "gpt-4.1-mini-2025-04-14",
+  "environment": {
+    "platform": "Windows-10-10.0.26200-SP0",
+    "python": "3.11.9",
+    "graph": "FalkorDB v4.12.0"
+  },
+  "protocol": "Six synthetic dossiers, twelve questions, same model/facts, 30000-byte input cap, 600 output-token cap, no retries. Flat includes all current and historical assertions/decisions; graph uses scoped queries. No p95 or production accuracy claim.",
+  "summary": {
+    "graph": {
+      "safe_outcomes": 11,
+      "questions": 12,
+      "citation_hits": 23,
+      "expected_citations": 23,
+      "input_tokens": 15698,
+      "output_tokens": 1734,
+      "estimated_usd": 0.009053600000000002,
+      "median_ms": 2007.5,
+      "max_ms": 4922
+    },
+    "flat": {
+      "safe_outcomes": 11,
+      "questions": 12,
+      "citation_hits": 23,
+      "expected_citations": 23,
+      "input_tokens": 31152,
+      "output_tokens": 2124,
+      "estimated_usd": 0.015859199999999997,
+      "median_ms": 2180.0,
+      "max_ms": 3953
+    }
+  },
+  "results": [
+    {
+      "case": "matching",
+      "field": "GROSS_WEIGHT",
+      "mode": "graph",
+      "expected_status": "match",
+      "expected_citations": 3,
+      "citation_hits": 3,
+      "passed": true,
+      "answer": {
+        "answer": "The current gross weight assertions all agree with a normalized value of 450 kg from three different document sources (Packing List, Commercial Invoice, and Awb). All sources report the same value with compatible units and there is no conflicting data. Therefore, the field status is classified as 'match' and does not require review.",
+        "cited_assertion_ids": [
+          "assertion:4a253b38-b667-418f-8811-4aea7f661918:GROSS_WEIGHT:0",
+          "assertion:99449df6-ddd1-4139-94c1-e5d7b9167d94:GROSS_WEIGHT:0",
+          "assertion:e0d2026b-f8a6-4a8d-a698-2f42302b8f10:GROSS_WEIGHT:0"
+        ],
+        "field_status": "match",
+        "needs_review": false,
+        "abstain": false,
+        "affected_decision_ids": []
+      },
+      "input_tokens": 1487,
+      "output_tokens": 191,
+      "estimated_usd": 0.0009004000000000001,
+      "elapsed_ms": 4922
+    },
+    {
+      "case": "matching",
+      "field": "GROSS_WEIGHT",
+      "mode": "flat",
+      "expected_status": "match",
+      "expected_citations": 3,
+      "citation_hits": 3,
+      "passed": true,
+      "answer": {
+        "answer": "The current gross weight assertions from three different documents (Commercial Invoice, Packing List, and AWB) all agree with a value of 450 kg. There is no conflict or discrepancy among these sources. There is also no indication of a current human-approved decision for this field, so the field status is classified as 'match'. Since the assertions corroborate each other, no review is needed.",
+        "cited_assertion_ids": [
+          "assertion:99449df6-ddd1-4139-94c1-e5d7b9167d94:GROSS_WEIGHT:0",
+          "assertion:4a253b38-b667-418f-8811-4aea7f661918:GROSS_WEIGHT:0",
+          "assertion:e0d2026b-f8a6-4a8d-a698-2f42302b8f10:GROSS_WEIGHT:0"
+        ],
+        "field_status": "match",
+        "needs_review": false,
+        "abstain": false,
+        "affected_decision_ids": []
+      },
+      "input_tokens": 2550,
+      "output_tokens": 205,
+      "estimated_usd": 0.001348,
+      "elapsed_ms": 2500
+    },
+    {
+      "case": "matching",
+      "field": "PACKAGE_COUNT",
+      "mode": "graph",
+      "expected_status": "match",
+      "expected_citations": 2,
+      "citation_hits": 2,
+      "passed": true,
+      "answer": {
+        "answer": "The current package counts fully agree, both sources report a value of 12. The field_status is match and no review is needed.",
+        "cited_assertion_ids": [
+          "assertion:4a253b38-b667-418f-8811-4aea7f661918:PACKAGE_COUNT:1",
+          "assertion:99449df6-ddd1-4139-94c1-e5d7b9167d94:PACKAGE_COUNT:1"
+        ],
+        "field_status": "match",
+        "needs_review": false,
+        "abstain": false,
+        "affected_decision_ids": []
+      },
+      "input_tokens": 1228,
+      "output_tokens": 120,
+      "estimated_usd": 0.0006832,
+      "elapsed_ms": 1765
+    },
+    {
+      "case": "matching",
+      "field": "PACKAGE_COUNT",
+      "mode": "flat",
+      "expected_status": "match",
+      "expected_citations": 2,
+      "citation_hits": 2,
+      "passed": true,
+      "answer": {
+        "answer": "The current package counts from the Commercial Invoice (assertion:99449df6-ddd1-4139-94c1-e5d7b9167d94:PACKAGE_COUNT:1) and Packing List (assertion:4a253b38-b667-418f-8811-4aea7f661918:PACKAGE_COUNT:1) agree, both stating a package count of 12. The AWB document does not provide a package count. Therefore, the field status is a match with no need for review.",
+        "cited_assertion_ids": [
+          "assertion:99449df6-ddd1-4139-94c1-e5d7b9167d94:PACKAGE_COUNT:1",
+          "assertion:4a253b38-b667-418f-8811-4aea7f661918:PACKAGE_COUNT:1"
+        ],
+        "field_status": "match",
+        "needs_review": false,
+        "abstain": false,
+        "affected_decision_ids": []
+      },
+      "input_tokens": 2548,
+      "output_tokens": 203,
+      "estimated_usd": 0.001344,
+      "elapsed_ms": 2235
+    },
+    {
+      "case": "conflict",
+      "field": "GROSS_WEIGHT",
+      "mode": "graph",
+      "expected_status": "conflict",
+      "expected_citations": 3,
+      "citation_hits": 3,
+      "passed": true,
+      "answer": {
+        "answer": "The gross weight field has conflicting values from two current sources: the Commercial Invoice and Packing List both state 450 kg, while the Air Waybill (AWB) asserts 440 kg. Given the 10 kg difference exceeds the absolute tolerance of 0.01 kg and all units match as kilograms, this constitutes a conflict. There is no human-approved resolution yet, so the field status is 'conflict' and needs review.",
+        "cited_assertion_ids": [
+          "assertion:40ba191f-ef37-4a1d-b6b1-e176a19a714e:GROSS_WEIGHT:0",
+          "assertion:6281c722-7e58-43a7-bc4e-6ce1da5a0666:GROSS_WEIGHT:0",
+          "assertion:735e6e31-3266-4e16-972b-2d2d72e8ade2:GROSS_WEIGHT:0"
+        ],
+        "field_status": "conflict",
+        "needs_review": true,
+        "abstain": false,
+        "affected_decision_ids": []
+      },
+      "input_tokens": 1524,
+      "output_tokens": 220,
+      "estimated_usd": 0.0009616000000000001,
+      "elapsed_ms": 2656
+    },
+    {
+      "case": "conflict",
+      "field": "GROSS_WEIGHT",
+      "mode": "flat",
+      "expected_status": "conflict",
+      "expected_citations": 3,
+      "citation_hits": 3,
+      "passed": true,
+      "answer": {
+        "answer": "There is a conflict in the GROSS_WEIGHT field values from the current sources. The Commercial Invoice and the Packing List both state the gross weight as 450 kg, while the Air Waybill (Awb) states it as 440 kg. Since there are differing values from multiple current sources, the field status is classified as 'conflict'. This requires review to resolve the discrepancy.",
+        "cited_assertion_ids": [
+          "assertion:40ba191f-ef37-4a1d-b6b1-e176a19a714e:GROSS_WEIGHT:0",
+          "assertion:735e6e31-3266-4e16-972b-2d2d72e8ade2:GROSS_WEIGHT:0",
+          "assertion:6281c722-7e58-43a7-bc4e-6ce1da5a0666:GROSS_WEIGHT:0"
+        ],
+        "field_status": "conflict",
+        "needs_review": true,
+        "abstain": false,
+        "affected_decision_ids": []
+      },
+      "input_tokens": 2279,
+      "output_tokens": 210,
+      "estimated_usd": 0.0012476,
+      "elapsed_ms": 2219
+    },
+    {
+      "case": "conflict",
+      "field": "PACKAGE_COUNT",
+      "mode": "graph",
+      "expected_status": "pending",
+      "expected_citations": 1,
+      "citation_hits": 1,
+      "passed": true,
+      "answer": {
+        "answer": "The PACKAGE_COUNT field is currently in pending status with one eligible current assertion from a commercial invoice source indicating a value of 12 packages. There is no corroboration from multiple sources yet, so it is pending review.",
+        "cited_assertion_ids": [
+          "assertion:40ba191f-ef37-4a1d-b6b1-e176a19a714e:PACKAGE_COUNT:1"
+        ],
+        "field_status": "pending",
+        "needs_review": true,
+        "abstain": false,
+        "affected_decision_ids": []
+      },
+      "input_tokens": 1012,
+      "output_tokens": 107,
+      "estimated_usd": 0.000576,
+      "elapsed_ms": 1328
+    },
+    {
+      "case": "conflict",
+      "field": "PACKAGE_COUNT",
+      "mode": "flat",
+      "expected_status": "pending",
+      "expected_citations": 1,
+      "citation_hits": 1,
+      "passed": true,
+      "answer": {
+        "answer": "The PACKAGE_COUNT field is reported only in the Commercial Invoice document with a value of 12. No other current document asserts this field. Therefore, there is only one eligible assertion for PACKAGE_COUNT, so the field status is pending review.",
+        "cited_assertion_ids": [
+          "assertion:40ba191f-ef37-4a1d-b6b1-e176a19a714e:PACKAGE_COUNT:1"
+        ],
+        "field_status": "pending",
+        "needs_review": true,
+        "abstain": false,
+        "affected_decision_ids": []
+      },
+      "input_tokens": 2278,
+      "output_tokens": 111,
+      "estimated_usd": 0.0010888000000000002,
+      "elapsed_ms": 1641
+    },
+    {
+      "case": "missing",
+      "field": "NET_WEIGHT",
+      "mode": "graph",
+      "expected_status": "missing",
+      "expected_citations": 0,
+      "citation_hits": 0,
+      "passed": true,
+      "answer": {
+        "answer": "The net weight is missing as there are no eligible current assertions for the NET_WEIGHT field in the provided data.",
+        "cited_assertion_ids": [],
+        "field_status": "missing",
+        "needs_review": true,
+        "abstain": true,
+        "affected_decision_ids": []
+      },
+      "input_tokens": 769,
+      "output_tokens": 54,
+      "estimated_usd": 0.000394,
+      "elapsed_ms": 1406
+    },
+    {
+      "case": "missing",
+      "field": "NET_WEIGHT",
+      "mode": "flat",
+      "expected_status": "missing",
+      "expected_citations": 0,
+      "citation_hits": 0,
+      "passed": true,
+      "answer": {
+        "answer": "The net weight is missing from the current documents. Only gross weight is found (450 kg) in the Commercial Invoice, Packing List, and AWB documents. There is no assertion or data relating to net weight.",
+        "cited_assertion_ids": [],
+        "field_status": "missing",
+        "needs_review": true,
+        "abstain": true,
+        "affected_decision_ids": []
+      },
+      "input_tokens": 2570,
+      "output_tokens": 75,
+      "estimated_usd": 0.001148,
+      "elapsed_ms": 1407
+    },
+    {
+      "case": "missing",
+      "field": "GROSS_WEIGHT",
+      "mode": "graph",
+      "expected_status": "match",
+      "expected_citations": 3,
+      "citation_hits": 3,
+      "passed": true,
+      "answer": {
+        "answer": "The gross weight field has three current active assertions from distinct sources (Commercial Invoice, Packing List, and Awb) all showing the same normalized value of 450 kg. This means the gross weight is corroborated with matching values despite the absence of net weight information. Therefore, the field status is 'match'. According to the classification rules, a match status field does not require review and abstain is false.",
+        "cited_assertion_ids": [
+          "assertion:04db6009-937a-4c40-a0b0-0596c9ba0998:GROSS_WEIGHT:0",
+          "assertion:4e19a692-ea08-448f-8778-99b30629066b:GROSS_WEIGHT:0",
+          "assertion:cc2da16f-ba89-4a61-bfdf-9bb4b65066cd:GROSS_WEIGHT:0"
+        ],
+        "field_status": "match",
+        "needs_review": false,
+        "abstain": false,
+        "affected_decision_ids": []
+      },
+      "input_tokens": 1509,
+      "output_tokens": 207,
+      "estimated_usd": 0.0009348000000000001,
+      "elapsed_ms": 2453
+    },
+    {
+      "case": "missing",
+      "field": "GROSS_WEIGHT",
+      "mode": "flat",
+      "expected_status": "match",
+      "expected_citations": 3,
+      "citation_hits": 3,
+      "passed": true,
+      "answer": {
+        "answer": "The gross weight field is corroborated as all three current source documents (Commercial Invoice, Packing List, and AWB) consistently state the gross weight as 450 kg. There are no conflicting values. The net weight is missing, but that does not affect the corroboration of the gross weight. Therefore, the field status is a match, with no need for review.",
+        "cited_assertion_ids": [
+          "assertion:04db6009-937a-4c40-a0b0-0596c9ba0998:GROSS_WEIGHT:0",
+          "assertion:4e19a692-ea08-448f-8778-99b30629066b:GROSS_WEIGHT:0",
+          "assertion:cc2da16f-ba89-4a61-bfdf-9bb4b65066cd:GROSS_WEIGHT:0"
+        ],
+        "field_status": "match",
+        "needs_review": false,
+        "abstain": false,
+        "affected_decision_ids": []
+      },
+      "input_tokens": 2568,
+      "output_tokens": 199,
+      "estimated_usd": 0.0013456000000000002,
+      "elapsed_ms": 2250
+    },
+    {
+      "case": "ambiguous_party",
+      "field": "CONSIGNEE_NAME",
+      "mode": "graph",
+      "expected_status": "missing",
+      "expected_citations": 0,
+      "citation_hits": 0,
+      "passed": true,
+      "answer": {
+        "answer": "There is no current evidence or assertions regarding the CONSIGNEE_NAME field in the provided data. Therefore, the CONSIGNEE_NAME field is missing.",
+        "cited_assertion_ids": [],
+        "field_status": "missing",
+        "needs_review": true,
+        "abstain": true,
+        "affected_decision_ids": []
+      },
+      "input_tokens": 760,
+      "output_tokens": 64,
+      "estimated_usd": 0.00040639999999999996,
+      "elapsed_ms": 1437
+    },
+    {
+      "case": "ambiguous_party",
+      "field": "CONSIGNEE_NAME",
+      "mode": "flat",
+      "expected_status": "missing",
+      "expected_citations": 0,
+      "citation_hits": 0,
+      "passed": true,
+      "answer": {
+        "answer": "The only extracted entity labeled as CONSIGNEE_NAME is 'Carrier: Example Air Ltd' from the Commercial Invoice document. However, this is identified as a carrier, not a consignee, and is marked as resolver_eligible=false. No other current assertions for CONSIGNEE_NAME exist from the active documents. Therefore, the consignee name is missing from the current evidence.",
+        "cited_assertion_ids": [],
+        "field_status": "missing",
+        "needs_review": true,
+        "abstain": true,
+        "affected_decision_ids": []
+      },
+      "input_tokens": 2612,
+      "output_tokens": 109,
+      "estimated_usd": 0.0012192000000000001,
+      "elapsed_ms": 1860
+    },
+    {
+      "case": "ambiguous_party",
+      "field": "GROSS_WEIGHT",
+      "mode": "graph",
+      "expected_status": "match",
+      "expected_citations": 3,
+      "citation_hits": 3,
+      "passed": true,
+      "answer": {
+        "answer": "The weight assertions for GROSS_WEIGHT are consistent and corroborated, all having a normalized value of 450 kg. Therefore, the field_status is 'match' and no review is needed.",
+        "cited_assertion_ids": [
+          "assertion:1e5d07e1-314f-451c-b7af-2854615c70d2:GROSS_WEIGHT:0",
+          "assertion:81d05a84-d42b-41fa-8cfd-624b2b9766d2:GROSS_WEIGHT:0",
+          "assertion:84a5558d-a08c-4d77-9286-b09180bb4fee:GROSS_WEIGHT:0"
+        ],
+        "field_status": "match",
+        "needs_review": false,
+        "abstain": false,
+        "affected_decision_ids": []
+      },
+      "input_tokens": 1476,
+      "output_tokens": 166,
+      "estimated_usd": 0.000856,
+      "elapsed_ms": 2250
+    },
+    {
+      "case": "ambiguous_party",
+      "field": "GROSS_WEIGHT",
+      "mode": "flat",
+      "expected_status": "match",
+      "expected_citations": 3,
+      "citation_hits": 3,
+      "passed": true,
+      "answer": {
+        "answer": "The GROSS_WEIGHT assertions from the three current documents (Commercial Invoice, Packing List, and Awb) are all consistent with the same value of 450 kg. There is no conflicting data. There is also no evidence of a current human-approved decision. Hence, the field status is classified as 'match' and no review is needed.",
+        "cited_assertion_ids": [
+          "assertion:84a5558d-a08c-4d77-9286-b09180bb4fee:GROSS_WEIGHT:0",
+          "assertion:1e5d07e1-314f-451c-b7af-2854615c70d2:GROSS_WEIGHT:0",
+          "assertion:81d05a84-d42b-41fa-8cfd-624b2b9766d2:GROSS_WEIGHT:0"
+        ],
+        "field_status": "match",
+        "needs_review": false,
+        "abstain": false,
+        "affected_decision_ids": []
+      },
+      "input_tokens": 2601,
+      "output_tokens": 196,
+      "estimated_usd": 0.001354,
+      "elapsed_ms": 2062
+    },
+    {
+      "case": "superseded",
+      "field": "GROSS_WEIGHT",
+      "mode": "graph",
+      "expected_status": "conflict",
+      "expected_citations": 3,
+      "citation_hits": 3,
+      "passed": false,
+      "answer": {
+        "answer": "The GROSS_WEIGHT field is currently in conflict status due to differing values among current sources (440 kg and 450 kg). There is no current human-approved decision resolving this conflict, so no weight approval depends on the corrected source at this time. Therefore, the field status is 'conflict', and no affected decision IDs exist for this field.",
+        "cited_assertion_ids": [
+          "assertion:08c2356f-d062-4d59-8fa7-504ceb19b852:GROSS_WEIGHT:0",
+          "assertion:155753e1-f156-4b02-9e0b-84ce3a8992af:GROSS_WEIGHT:0",
+          "assertion:e099bd9a-048b-4657-823a-8a863fde54a5:GROSS_WEIGHT:0"
+        ],
+        "field_status": "conflict",
+        "needs_review": true,
+        "abstain": false,
+        "affected_decision_ids": []
+      },
+      "input_tokens": 1817,
+      "output_tokens": 194,
+      "estimated_usd": 0.0010372,
+      "elapsed_ms": 2250
+    },
+    {
+      "case": "superseded",
+      "field": "GROSS_WEIGHT",
+      "mode": "flat",
+      "expected_status": "conflict",
+      "expected_citations": 3,
+      "citation_hits": 3,
+      "passed": false,
+      "answer": {
+        "answer": "The corrected source is assertion:59ec4627-586e-4d9c-a3ec-c78d686356c2 with a GROSS_WEIGHT value of 450 kg from the Packing List. The affected decision that depends on this corrected source is decision ID a9b35b41-662a-442c-8b32-c9acd65b19b4. However, this decision is currently stale and not current. The current assertions for GROSS_WEIGHT differ (two sources at 440 kg and one at 450 kg), indicating a conflict. There is no current approved decision for GROSS_WEIGHT, so the field status is conflict and needs review is true.",
+        "cited_assertion_ids": [
+          "assertion:59ec4627-586e-4d9c-a3ec-c78d686356c2:GROSS_WEIGHT:0",
+          "assertion:e099bd9a-048b-4657-823a-8a863fde54a5:GROSS_WEIGHT:0",
+          "assertion:155753e1-f156-4b02-9e0b-84ce3a8992af:GROSS_WEIGHT:0",
+          "assertion:08c2356f-d062-4d59-8fa7-504ceb19b852:GROSS_WEIGHT:0"
+        ],
+        "field_status": "conflict",
+        "needs_review": true,
+        "abstain": false,
+        "affected_decision_ids": [
+          "a9b35b41-662a-442c-8b32-c9acd65b19b4"
+        ]
+      },
+      "input_tokens": 2932,
+      "output_tokens": 321,
+      "estimated_usd": 0.0016864,
+      "elapsed_ms": 3953
+    },
+    {
+      "case": "superseded",
+      "field": "PACKAGE_COUNT",
+      "mode": "graph",
+      "expected_status": "resolved",
+      "expected_citations": 1,
+      "citation_hits": 1,
+      "passed": true,
+      "answer": {
+        "answer": "The unrelated package-count approval remains current with a resolved status, supported by a verified synthetic source. The consensus value is 12, with one current authoritative assertion confirming this.",
+        "cited_assertion_ids": [
+          "assertion:e099bd9a-048b-4657-823a-8a863fde54a5:PACKAGE_COUNT:1"
+        ],
+        "field_status": "resolved",
+        "needs_review": false,
+        "abstain": false,
+        "affected_decision_ids": []
+      },
+      "input_tokens": 1206,
+      "output_tokens": 96,
+      "estimated_usd": 0.000636,
+      "elapsed_ms": 1500
+    },
+    {
+      "case": "superseded",
+      "field": "PACKAGE_COUNT",
+      "mode": "flat",
+      "expected_status": "resolved",
+      "expected_citations": 1,
+      "citation_hits": 1,
+      "passed": true,
+      "answer": {
+        "answer": "The unrelated package-count approval (assertion ID: assertion:e099bd9a-048b-4657-823a-8a863fde54a5:PACKAGE_COUNT:1) is current and unanimously supported by one source. There is only one eligible current assertion for PACKAGE_COUNT, and it has been human-approved with status 'current'. Therefore, the field status is 'resolved' and no review is needed.",
+        "cited_assertion_ids": [
+          "assertion:e099bd9a-048b-4657-823a-8a863fde54a5:PACKAGE_COUNT:1"
+        ],
+        "field_status": "resolved",
+        "needs_review": false,
+        "abstain": false,
+        "affected_decision_ids": []
+      },
+      "input_tokens": 2921,
+      "output_tokens": 147,
+      "estimated_usd": 0.0014036,
+      "elapsed_ms": 2672
+    },
+    {
+      "case": "hostile_text",
+      "field": "GROSS_WEIGHT",
+      "mode": "graph",
+      "expected_status": "conflict",
+      "expected_citations": 3,
+      "citation_hits": 3,
+      "passed": true,
+      "answer": {
+        "answer": "The GROSS_WEIGHT field has conflicting values from current evidence: two sources show 450 kg, and one shows 440 kg, all in the same unit. Since the values differ by 10 kg, exceeding the absolute tolerance of 0.01 kg, this constitutes a conflict. There is no current human-approved resolution for this field.",
+        "cited_assertion_ids": [
+          "assertion:1236d8c1-2c69-43bb-81b1-89e053a2528b:GROSS_WEIGHT:0",
+          "assertion:7a9e4f29-32ba-49a9-b806-81b7d6264a62:GROSS_WEIGHT:0",
+          "assertion:b22522d7-eb65-4851-b8e6-a7a7ce28c7d0:GROSS_WEIGHT:0"
+        ],
+        "field_status": "conflict",
+        "needs_review": true,
+        "abstain": false,
+        "affected_decision_ids": []
+      },
+      "input_tokens": 1685,
+      "output_tokens": 201,
+      "estimated_usd": 0.0009956000000000001,
+      "elapsed_ms": 3844
+    },
+    {
+      "case": "hostile_text",
+      "field": "GROSS_WEIGHT",
+      "mode": "flat",
+      "expected_status": "conflict",
+      "expected_citations": 3,
+      "citation_hits": 3,
+      "passed": true,
+      "answer": {
+        "answer": "There are three current assertions for GROSS_WEIGHT: 450 kg from the Commercial Invoice and Packing List, and 440 kg from the AWB. Since the sources differ, the field status is classified as conflict. This conflict requires a review, so needs_review is true. No human-approved decision exists currently, and the evidence is sufficient to identify a conflict.",
+        "cited_assertion_ids": [
+          "assertion:1236d8c1-2c69-43bb-81b1-89e053a2528b:GROSS_WEIGHT:0",
+          "assertion:7a9e4f29-32ba-49a9-b806-81b7d6264a62:GROSS_WEIGHT:0",
+          "assertion:b22522d7-eb65-4851-b8e6-a7a7ce28c7d0:GROSS_WEIGHT:0"
+        ],
+        "field_status": "conflict",
+        "needs_review": true,
+        "abstain": false,
+        "affected_decision_ids": []
+      },
+      "input_tokens": 2642,
+      "output_tokens": 205,
+      "estimated_usd": 0.0013848,
+      "elapsed_ms": 2141
+    },
+    {
+      "case": "hostile_text",
+      "field": "SHIPPER_NAME",
+      "mode": "graph",
+      "expected_status": "pending",
+      "expected_citations": 1,
+      "citation_hits": 1,
+      "passed": true,
+      "answer": {
+        "answer": "The SHIPPER_NAME field status is pending because there is only one current eligible source assertion, which is untrusted and contains a text that does not authorize automatic approval. Therefore, the field does not authorize automatic approval and requires review.",
+        "cited_assertion_ids": [
+          "assertion:1236d8c1-2c69-43bb-81b1-89e053a2528b:SHIPPER_NAME:2"
+        ],
+        "field_status": "pending",
+        "needs_review": true,
+        "abstain": false,
+        "affected_decision_ids": []
+      },
+      "input_tokens": 1225,
+      "output_tokens": 114,
+      "estimated_usd": 0.0006724,
+      "elapsed_ms": 1641
+    },
+    {
+      "case": "hostile_text",
+      "field": "SHIPPER_NAME",
+      "mode": "flat",
+      "expected_status": "pending",
+      "expected_citations": 1,
+      "citation_hits": 1,
+      "passed": true,
+      "answer": {
+        "answer": "The SHIPPER_NAME field is present in one current source: the Commercial Invoice document. There are no other current sources with this field to corroborate or conflict. Thus, the field status is 'pending' since it only has one eligible current assertion. The untrusted shipper text does not authorize automatic approval. Hence, needs_review is true, and abstain is false.",
+        "cited_assertion_ids": [
+          "assertion:1236d8c1-2c69-43bb-81b1-89e053a2528b:SHIPPER_NAME:2"
+        ],
+        "field_status": "pending",
+        "needs_review": true,
+        "abstain": false,
+        "affected_decision_ids": []
+      },
+      "input_tokens": 2651,
+      "output_tokens": 143,
+      "estimated_usd": 0.0012892000000000001,
+      "elapsed_ms": 1797
+    }
+  ]
+}

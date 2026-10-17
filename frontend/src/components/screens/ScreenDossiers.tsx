@@ -1,309 +1,67 @@
-import { useState, useRef, useEffect, type DragEvent, type ChangeEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api, uploadShipment, getActiveRules, type RuleCheck } from '../../utils/api';
+import { api, apiError, uploadShipment } from '../../utils/api';
 import { useShipment } from '../../hooks/useShipment';
-
-interface Props { onTriggerToast: (t: { title: string; message: string; type?: 'error' | 'info' | 'success' }) => void; }
-
-interface QueuedFile { name: string; size: string; file: File; status: string; icon: string; }
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+interface Props { onTriggerToast: (t: { title: string; message: string; type?: 'error' | 'info' | 'success' }) => void }
+interface Job { status: string; completed_documents: number; total_documents: number; documents: { document_id: string; original_name: string; status: string; error_message?: string }[] }
+function delay(signal: AbortSignal) {
+  return new Promise<void>((resolve, reject) => {
+    if (signal.aborted) { reject(new DOMException('Monitoring stopped', 'AbortError')); return; }
+    const abort = () => { clearTimeout(timer); reject(new DOMException('Monitoring stopped', 'AbortError')); };
+    const timer = window.setTimeout(() => { signal.removeEventListener('abort', abort); resolve(); }, 2000);
+    signal.addEventListener('abort', abort, { once: true });
+  });
 }
-
-function docIcon(name: string): string {
-  const n = name.toLowerCase();
-  if (n.includes('invoice')) return 'receipt';
-  if (n.includes('awb') || n.includes('airway')) return 'flight_takeoff';
-  if (n.includes('packing') || n.includes('pack')) return 'format_list_numbered';
-  if (n.includes('bill') || n.includes('lading')) return 'directions_boat';
-  if (n.includes('delivery')) return 'local_shipping';
-  return 'description';
-}
-
 export function ScreenDossiers({ onTriggerToast }: Props) {
-  const navigate = useNavigate();
-  const { setShipmentId } = useShipment();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [fileStack, setFileStack] = useState<QueuedFile[]>([]);
-  const [progress, setProgress] = useState(0);
-  const [activeChecks, setActiveChecks] = useState<RuleCheck[]>([]);
-  const [isLoadingChecks, setIsLoadingChecks] = useState(true);
-
-  useEffect(() => {
-    getActiveRules().then(setActiveChecks).catch(() => {}).finally(() => setIsLoadingChecks(false));
-  }, []);
-
-  const addFiles = (incoming: File[]) => {
-    const pdfs = incoming.filter(f => f.name.toLowerCase().endsWith('.pdf'));
-    if (pdfs.length !== incoming.length) {
-      onTriggerToast({ title: 'Invalid File Type', message: 'Only PDF files are accepted.', type: 'error' });
-    }
-    setFileStack(prev => {
-      const names = new Set(prev.map(f => f.name));
-      const novel = pdfs.filter(f => !names.has(f.name)).map(f => ({
-        name: f.name,
-        size: formatBytes(f.size),
-        file: f,
-        status: 'Queued for OCR',
-        icon: docIcon(f.name),
-      }));
-      return [...prev, ...novel];
-    });
-    if (pdfs.length > 0) {
-      onTriggerToast({ title: `${pdfs.length} File${pdfs.length > 1 ? 's' : ''} Queued`, message: 'Ready for OCR ingestion pipeline.' });
+  const { shipmentId, setShipmentId } = useShipment(); const navigate = useNavigate();
+  const [files, setFiles] = useState<File[]>([]); const [job, setJob] = useState<Job | null>(null);
+  const [busy, setBusy] = useState(false); const [stage, setStage] = useState('Ready to upload'); const [error, setError] = useState('');
+  const controller = useRef<AbortController | null>(null);
+  useEffect(() => () => controller.current?.abort(), []);
+  const monitor = async (id: string, signal: AbortSignal) => {
+    const deadline = Date.now() + 10 * 60 * 1000; let failures = 0;
+    while (!signal.aborted) {
+      if (Date.now() > deadline) throw new Error('Monitoring timed out. The saved dossier continues on the server; resume monitoring below.');
+      let data: Job;
+      try { data = (await api.get<Job>(`/upload/${id}/status`, { signal })).data; failures = 0; }
+      catch (err) { if (signal.aborted || ++failures >= 3) throw err; await delay(signal); continue; }
+      if (signal.aborted) return;
+      setJob(data); setStage(data.status === 'pending' ? 'Queued for extraction' : data.status === 'processing' ? 'Extracting documents' : data.status);
+      if (['error', 'interrupted'].includes(data.status)) throw new Error('Processing needs attention. Review the document errors, then retry the saved dossier.');
+      if (['done', 'completed'].includes(data.status)) { setStage('Extraction saved — check graph synchronization in Context Agent'); onTriggerToast({ title: 'Extraction saved', message: 'Human review and export readiness are separate steps.', type: 'success' }); return; }
+      await delay(signal);
     }
   };
-
-  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-    addFiles(Array.from(e.dataTransfer.files));
-  };
-
-  const handleBrowse = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) addFiles(Array.from(e.target.files));
-  };
-
-  const handleProcessDossier = async () => {
-    if (fileStack.length === 0) {
-      onTriggerToast({ title: 'No Files', message: 'Please add PDF files before processing.', type: 'error' });
-      return;
-    }
-
-    setIsProcessing(true);
-    setProgress(10);
-
+  const run = async (mode: 'upload' | 'resume' | 'retry') => {
+    controller.current?.abort(); const current = new AbortController(); controller.current = current; setBusy(true); setError('');
     try {
-      const files = fileStack.map(f => f.file);
-      setProgress(30);
-
-      const response = await uploadShipment(files);
-      setProgress(50);
-
-      setShipmentId(response.shipment_id);
-      
-      // We must WAIT for the AI pipeline to finish processing the documents in the background.
-      // Otherwise, if we navigate immediately, the database won't have the results yet,
-      // and the next screen will fall back to the demo data.
-      let isDone = false;
-      let pollFailures = 0;
-      const deadline = Date.now() + 10 * 60 * 1000;
-      while (!isDone) {
-        if (Date.now() > deadline) throw new Error('Processing is taking longer than expected. Your dossier is saved; check its status before retrying.');
-        // Wait 3 seconds between polls
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        
-        let statusRes;
-        try {
-          const { data } = await api.get(`/upload/${response.shipment_id}/status`);
-          statusRes = data;
-          pollFailures = 0;
-        } catch (pollErr) {
-          pollFailures += 1;
-          if (pollFailures >= 3) throw pollErr;
-          continue;
-        }
-          
-          if (statusRes.status === 'completed' || (statusRes.status as string) === 'done') {
-            isDone = true;
-            setProgress(100);
-          } else if (statusRes.status === 'error' || statusRes.status === 'interrupted') {
-            throw new Error('Extraction failed or was interrupted. The dossier was preserved; review its error before retrying.');
-          } else {
-            // Still processing, maybe update progress slightly to show activity
-            setProgress(Math.round(100 * (statusRes.completed_documents ?? 0) / Math.max(1, statusRes.total_documents ?? files.length)));
-          }
+      let id = shipmentId;
+      if (mode === 'upload') {
+        if (!files.length || files.length > 10 || files.some(f => f.size > 20 * 1024 ** 2) || files.reduce((n, f) => n + f.size, 0) > 80 * 1024 ** 2) throw new Error('Choose 1–10 PDFs, at most 20 MB each and 80 MB combined.');
+        setStage('Uploading PDFs'); setJob(null); id = (await uploadShipment(files, current.signal)).shipment_id;
+        if (current.signal.aborted) return; setShipmentId(id); setFiles([]);
       }
-
-      onTriggerToast({
-        title: 'Dossier Transmitted & Processed',
-        message: `Shipment ${response.shipment_id.slice(0, 8)}... AI Extraction Complete.`,
-        type: 'success',
-      });
-
-      setTimeout(() => navigate('/discrepancies'), 800);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Upload failed. Is the backend running?';
-      onTriggerToast({ title: 'Upload Failed', message: msg, type: 'error' });
-      setIsProcessing(false);
-      setProgress(0);
-    }
+      if (!id) throw new Error('Select a saved dossier first.');
+      if (mode === 'retry') await api.post(`/upload/${id}/retry`, {}, { signal: current.signal });
+      await monitor(id, current.signal);
+    } catch (err) { if (!current.signal.aborted) setError(apiError(err)); }
+    finally { if (!current.signal.aborted) setBusy(false); }
   };
-
-  return (
-    <div className="w-full max-w-7xl mx-auto px-4 sm:px-8 py-8 flex flex-col gap-6">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-1.5 text-primary text-xs font-semibold uppercase tracking-wider">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary animate-ping"></span>
-            Ingestion Pipeline • Node CMB-04
-          </div>
-          <h1 className="text-2xl font-bold text-on-surface tracking-tight mt-1">Dossier Ingestion &amp; Automated Multi-Doc Parser</h1>
-          <p className="text-xs md:text-sm text-on-surface-variant max-w-2xl mt-1">
-            Drop shipping dossiers to auto-extract structured line items, verify against Sri Lanka Customs schedules, and audit for cross-document consistency.
-          </p>
-        </div>
-
-      </div>
-
-      {/* Drop Zone */}
-      <div
-        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
-        className={`relative rounded-xl bg-surface-container-lowest p-8 md:p-10 shadow-sm border-2 border-dashed transition-all cursor-pointer text-center ${isDragging ? 'border-primary bg-primary-fixed/20' : 'border-outline-variant/40 hover:border-primary/50'}`}
-      >
-        <input ref={fileInputRef} type="file" multiple accept=".pdf" className="hidden" onChange={handleBrowse} />
-        <div className="w-16 h-16 rounded-full bg-primary-fixed/50 flex items-center justify-center mx-auto mb-4 text-primary shadow-sm">
-          <span className="material-symbols-outlined text-[32px]">cloud_upload</span>
-        </div>
-        <h2 className="text-base font-semibold text-on-surface">Drag &amp; drop shipping dossiers or click to browse</h2>
-        <p className="text-xs text-on-surface-variant mt-1 mb-5 max-w-md mx-auto">Multi-page PDF supported. Parallel OCR stream starts instantly.</p>
-        <div className="flex flex-wrap items-center justify-center gap-2 max-w-2xl mx-auto mb-6 text-xs text-on-surface-variant">
-          {[
-            { icon: 'description',             label: 'Commercial Invoice' },
-            { icon: 'inventory_2',             label: 'Packing List' },
-            { icon: 'flight_takeoff',          label: 'Air Waybill (AWB)' },
-            { icon: 'directions_boat',         label: 'Bill of Lading (B/L)' },
-          ].map((t) => (
-            <span key={t.label} className="px-3 py-1 rounded-full bg-surface-container-high flex items-center gap-1">
-              <span className="material-symbols-outlined text-primary text-[14px]">{t.icon}</span> {t.label}
-            </span>
-          ))}
-        </div>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3" onClick={e => e.stopPropagation()}>
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="bg-primary text-white hover:bg-primary-container px-5 py-2.5 rounded-lg text-xs font-semibold flex items-center gap-2 shadow-md transition-all active:scale-95"
-          >
-            <span className="material-symbols-outlined text-[16px]">folder_open</span> Browse Files
-          </button>
-        </div>
-      </div>
-
-      {/* Queued Stack + Process Button */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Pre-Check Matrix */}
-        <div className="lg:col-span-6 bg-surface-container-lowest rounded-xl p-5 shadow-sm border border-outline-variant/20 flex flex-col gap-4">
-          <div className="flex items-center justify-between border-b border-outline-variant/20 pb-3">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-secondary-container/30 flex items-center justify-center text-secondary">
-                <span className="material-symbols-outlined text-[18px]">fact_check</span>
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-on-surface">Pre-Check Matrix Engine</h3>
-                <p className="text-[11px] text-on-surface-variant">Automated validation against Sri Lanka Customs rules</p>
-              </div>
-            </div>
-            <span className="bg-secondary-container/20 text-on-secondary-container text-xs px-2.5 py-1 rounded-full font-semibold flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span> 4 Checks
-            </span>
-          </div>
-          <div className="space-y-2 text-xs">
-            {isLoadingChecks ? (
-              <div className="p-3 text-on-surface-variant animate-pulse">Loading checks from backend...</div>
-            ) : (
-              activeChecks.map((item) => (
-                <div key={item.id} className="bg-surface-container-low rounded-lg p-3 flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-2">
-                    <span className="material-symbols-outlined text-secondary text-[18px]">check_circle</span>
-                    <div>
-                      <div className="font-semibold text-on-surface">{item.label}</div>
-                      <p className="text-on-surface-variant mt-0.5">{item.description}</p>
-                    </div>
-                  </div>
-                  <span className="text-secondary font-semibold bg-secondary-container/20 px-2 py-0.5 rounded shrink-0">{item.status}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* File Stack + Submit */}
-        <div className="lg:col-span-6 bg-surface-container-lowest rounded-xl p-5 shadow-sm border border-outline-variant/20 flex flex-col gap-4">
-          {isProcessing ? (
-            <div className="flex flex-col items-center justify-center h-full flex-1 gap-5 py-8">
-              <div className="relative w-32 h-32 flex items-center justify-center">
-                <svg className="absolute inset-0 w-full h-full text-surface-container-highest" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="45" fill="none" strokeWidth="8" stroke="currentColor" />
-                </svg>
-                <svg className="absolute inset-0 w-full h-full text-primary drop-shadow-md" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
-                  <circle cx="50" cy="50" r="45" fill="none" strokeWidth="8" stroke="currentColor" strokeDasharray="283" strokeDashoffset={283 - (progress / 100) * 283} className="transition-all duration-500 ease-out" strokeLinecap="round" />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-primary">
-                  <span className="text-2xl font-mono font-bold tracking-tighter">{Math.round(progress)}%</span>
-                </div>
-              </div>
-              <div className="text-center animate-pulse">
-                <h3 className="text-base font-semibold text-on-surface mb-1">AI Pipeline Processing</h3>
-                <p className="text-xs text-on-surface-variant max-w-[250px] mx-auto">
-                  Extracting entities, normalizing data, and cross-examining {fileStack.length} document{fileStack.length !== 1 ? 's' : ''}...
-                </p>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center justify-between border-b border-outline-variant/20 pb-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-primary-fixed/40 flex items-center justify-center text-primary">
-                    <span className="material-symbols-outlined text-[18px]">layers</span>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-on-surface">Queued Dossier Stack</h3>
-                    <p className="text-[11px] text-on-surface-variant">{fileStack.length} document{fileStack.length !== 1 ? 's' : ''} queued</p>
-                  </div>
-                </div>
-                <button onClick={() => setFileStack([])} className="text-xs text-outline hover:text-on-surface transition-colors">Clear All</button>
-              </div>
-
-              {fileStack.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 text-xs text-on-surface-variant gap-2">
-                  <span className="material-symbols-outlined text-[32px] text-outline">inbox</span>
-                  <span>No files queued. Drop PDFs above to begin.</span>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {fileStack.map((file, idx) => (
-                    <div key={idx} className="bg-surface-container-low rounded-lg p-2.5 px-3 flex items-center justify-between text-xs shadow-sm">
-                      <div className="flex items-center gap-3 truncate">
-                        <div className="w-8 h-8 rounded bg-primary-fixed/30 text-primary flex items-center justify-center shrink-0">
-                          <span className="material-symbols-outlined text-[18px]">{file.icon}</span>
-                        </div>
-                        <div className="truncate">
-                          <div className="font-semibold text-on-surface truncate">{file.name}</div>
-                          <div className="text-[11px] text-on-surface-variant flex items-center gap-1.5 mt-0.5">
-                            <span>{file.size}</span><span>•</span>
-                            <span className="text-secondary font-medium">{file.status}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <button onClick={() => setFileStack(prev => prev.filter((_, i) => i !== idx))}
-                        className="p-1 hover:bg-surface-container rounded text-outline hover:text-error">
-                        <span className="material-symbols-outlined text-[16px]">close</span>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <button
-                onClick={handleProcessDossier}
-                disabled={fileStack.length === 0}
-                className="w-full bg-primary hover:bg-primary-container text-white py-3 px-4 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-auto"
-              >
-                <span className="material-symbols-outlined text-[18px]">bolt</span>
-                <span>Process Dossier ({fileStack.length} Document{fileStack.length !== 1 ? 's' : ''})</span>
-              </button>
-            </>
-          )}
-        </div>
-      </div>
+  const choose = (incoming: File[]) => { if (incoming.some(f => !f.name.toLowerCase().endsWith('.pdf'))) { setError('Only PDF files are accepted.'); return; } setError(''); setFiles(incoming); };
+  return <section className="max-w-5xl mx-auto w-full p-5 sm:p-8 space-y-6">
+    <header><h1 className="text-2xl font-bold">Upload a dossier</h1><p className="text-sm mt-2 text-on-surface-variant">Extract document evidence, compare sources, then review the result. This prototype does not verify official customs schedules or file declarations.</p></header>
+    {error && <p role="alert" className="border border-error/30 text-error p-4 rounded-xl">{error}</p>}
+    <div onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); if (!busy) choose(Array.from(e.dataTransfer.files)); }} className="bg-surface-container-lowest border-2 border-dashed rounded-xl p-7 space-y-4">
+      <label className="font-semibold block">Choose PDFs<input disabled={busy} type="file" multiple accept=".pdf,application/pdf" onChange={e => choose(Array.from(e.target.files ?? []))} className="block mt-3 w-full text-sm" /></label>
+      <p className="text-sm">1–10 files · 20 MB per file · 80 MB combined · up to 25 pages per file.</p>
+      <p className="text-sm text-on-surface-variant">Local extraction runs sequentially and requires the OCR profile. If extraction is unavailable, you will see an error. Use the labeled synthetic example in Context Agent to explore graph review without OCR.</p>
+      <ul className="text-sm space-y-2">{files.map((f, i) => <li key={`${f.name}-${i}`}>{f.name} · {(f.size / 1024 ** 2).toFixed(2)} MB</li>)}</ul>
+      <button disabled={busy || !files.length} onClick={() => void run('upload')} className="bg-primary text-white p-3 rounded-lg disabled:opacity-40">Upload and extract</button>
     </div>
-  );
+    <div className="rounded-xl border p-5 space-y-4 bg-surface-container-lowest"><h2 className="font-semibold">Processing status</h2><p role="status" aria-live="polite">{stage}</p>
+      {job && <><p className="text-sm">{job.completed_documents} of {job.total_documents} documents extracted. Extraction does not mean approval.</p><progress max={Math.max(1, job.total_documents)} value={job.completed_documents} className="w-full" /><ul className="text-sm space-y-2">{job.documents.map(d => <li key={d.document_id}><strong>{d.original_name}</strong> — {d.status}{d.error_message && <p className="text-error">{d.error_message}</p>}</li>)}</ul></>}
+      {shipmentId && <><p className="text-xs font-mono break-all">Saved dossier: {shipmentId}</p><div className="flex flex-wrap gap-3"><button disabled={busy} onClick={() => void run('resume')} className="border rounded-lg p-2 disabled:opacity-40">Resume monitoring</button><button disabled={busy || !job || !['error', 'interrupted'].includes(job.status)} onClick={() => void run('retry')} className="border rounded-lg p-2 disabled:opacity-40">Retry saved dossier</button><button onClick={() => navigate('/context-agent')} className="border rounded-lg p-2">Open Context Agent</button></div></>}
+      {busy && <button onClick={() => { controller.current?.abort(); setBusy(false); setStage('Monitoring stopped — the saved server job continues'); }} className="underline text-sm">Stop monitoring</button>}
+    </div>
+  </section>;
 }

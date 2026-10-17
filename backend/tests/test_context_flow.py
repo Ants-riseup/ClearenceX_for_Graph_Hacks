@@ -67,7 +67,7 @@ def test_graph_change_invalidates_only_dependent_approval(reviewer):
     assert decisions[package["id"]]["validity_state"] == "current"
     memory = graph_tool(sid, user, "recall_approved_decisions")
     assert [m["decision_id"] for m in memory] == [package["id"]]
-    assert client.get(f"/api/shipments/{sid}/asycuda-export").status_code in (409, 422)
+    assert client.post(f"/api/shipments/{sid}/exports", json={'expected_revision': status(client, sid)['source_revision'], 'request_id': str(uuid.uuid4())}).status_code in (409, 422)
     # New session reads durable history, not a process-local registry.
     assert len(client.get(f"/api/shipments/{sid}/audit-trail").json()["entries"]) >= 6
 

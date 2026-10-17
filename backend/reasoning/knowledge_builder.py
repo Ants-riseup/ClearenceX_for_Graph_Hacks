@@ -21,6 +21,7 @@ class KnowledgeBuilder:
                             node_type="canonical_field", entity_type=field["entity_type"],
                             value=field["consensus_value"], consensus_value=field["consensus_value"],
                             unit=field.get("unit"), status=field["status"],
+                            comparison_policy=field.get('comparison_policy', {}),
                             resolution_confidence=field.get("resolution_confidence", 0.0),
                             label=field["label"])
         self.graph.add_edge(shipment_id, field_id, relationship="HAS_FIELD")
