@@ -18,6 +18,7 @@ export function ScreenContextAgent() {
   const { user } = useAuth();
   const [context, setContext] = useState<Context | null>(null);
   const [fields, setFields] = useState<Field[]>([]);
+  const [fieldsLoading, setFieldsLoading] = useState(false);
   const [fieldId, setFieldId] = useState('');
   const [evidenceResult, setEvidenceResult] = useState<{ fieldId: string; values: Evidence[] } | null>(null);
   const [runs, setRuns] = useState<Run[]>([]);
@@ -56,19 +57,30 @@ export function ScreenContextAgent() {
     if (ticket !== latestRequest.current) return;
     setContext(state); setRuns(history.runs);
     if (state.status === 'synced') {
-      const { data } = await api.get<{ fields: Field[] }>(`${base}/context-issues`);
-      if (ticket !== latestRequest.current) return;
-      setFields(data.fields);
-      setFieldId(current => data.fields.some(f => f.canonical_field_id === current) ? current : data.fields[0]?.canonical_field_id ?? '');
+      setFieldsLoading(true);
+      try {
+        const { data } = await api.get<{ fields: Field[] }>(`${base}/context-issues`);
+        if (ticket !== latestRequest.current) return;
+        setFields(data.fields);
+        setFieldId(current => data.fields.some(f => f.canonical_field_id === current) ? current : data.fields[0]?.canonical_field_id ?? '');
+      } finally {
+        if (ticket === latestRequest.current) setFieldsLoading(false);
+      }
     }
   }, [shipmentId, base]);
   useEffect(() => {
     if (!shipmentId) return;
     let active = true;
-    const load = () => { if (active) void refresh().catch(err => { if (active) setError(apiError(err)); }); };
-    load();
-    const timer = window.setInterval(load, 3000);
-    return () => { active = false; latestRequest.current += 1; window.clearInterval(timer); };
+    let timer: number | undefined;
+    // Wait for the entire refresh before polling again. A fixed interval can
+    // invalidate every slow field response before it reaches the dropdown.
+    const load = async () => {
+      try { await refresh(); }
+      catch (err) { if (active) setError(apiError(err)); }
+      finally { if (active) timer = window.setTimeout(() => void load(), 3000); }
+    };
+    void load();
+    return () => { active = false; latestRequest.current += 1; window.clearTimeout(timer); };
   }, [shipmentId, refresh]);
   useEffect(() => {
     if (!shipmentId || !fieldId || !synced) return;
@@ -125,7 +137,7 @@ export function ScreenContextAgent() {
         </section>
         <section className="p-5 bg-surface-container-lowest rounded-xl border border-outline-variant/30 flex flex-col gap-4">
           <h2 className="text-lg font-bold">Review the source evidence</h2>
-          <label className="text-sm">Field<select value={fieldId} onChange={e => setFieldId(e.target.value)} disabled={!synced} className="block w-full border p-3 rounded-lg mt-2">{fields.map(f => <option key={f.canonical_field_id} value={f.canonical_field_id}>{f.label} · {f.status}</option>)}</select></label>
+          <label className="text-sm">Field<select value={fieldId} onChange={e => setFieldId(e.target.value)} disabled={!synced || !fields.length} aria-busy={fieldsLoading} className="block w-full border p-3 rounded-lg mt-2">{!fields.length && <option value="">{!synced ? 'Waiting for graph synchronization…' : fieldsLoading ? 'Loading review fields…' : 'No review fields available'}</option>}{fields.map(f => <option key={f.canonical_field_id} value={f.canonical_field_id}>{f.label} · {f.status}</option>)}</select></label>
           {field && <p className="text-sm">Proposed field value: <strong>{field.consensus_value} {field.unit}</strong>. Verify the source before approving.</p>}
           <button onClick={() => { const index = fields.findIndex(f => f.canonical_field_id === fieldId); const next = [...fields.slice(index + 1), ...fields.slice(0, index + 1)].find(f => !['resolved', 'match'].includes(f.status)); if (next) setFieldId(next.canonical_field_id); }} className="text-sm text-primary underline self-start">Next unresolved field</button>
           {evidence.map(e => <div key={e.assertion_id} className="border rounded-lg p-3 flex flex-col gap-2">
