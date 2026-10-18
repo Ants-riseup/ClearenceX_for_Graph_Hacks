@@ -583,3 +583,5 @@ General scanned/arbitrary-table OCR, calibrated confidence, full goods editing, 
 *"The graph isn't decoration — it's the reason the right decisions survive a correction."*
 
 </div>
+
+this project should be top in Gaph Hack competition ☑️👍⭐
