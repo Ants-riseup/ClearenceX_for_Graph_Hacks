@@ -13,7 +13,7 @@ names = ['README.md', 'GRAPH_HACKS_WORKPLAN.md', 'compose.yaml', '.env.graphhack
     'frontend/package.json', 'frontend/package-lock.json', 'frontend/index.html', 'frontend/Dockerfile', 'frontend/.dockerignore', 'frontend/nginx.conf',
     'frontend/vite.config.ts', 'frontend/tsconfig.json', 'frontend/tsconfig.app.json', 'frontend/tsconfig.node.json', 'frontend/.oxlintrc.json']
 names += [str(p.relative_to(root)).replace('\\', '/') for p in (root / 'Docs').glob('GRAPH*.md')]
-names += [f'Docs/{name}.md' for name in ['LOCAL_SETUP', 'DEMO', 'EVALUATION', 'SUBMISSION_CHECKLIST', 'TEAM_TECHNICAL_BRIEF']]
+names += [f'Docs/{name}.md' for name in ['LOCAL_SETUP', 'DEMO', 'EVALUATION', 'SUBMISSION_CHECKLIST', 'TEAM_TECHNICAL_BRIEF', 'NINE_FIXES_VERIFICATION', 'LOCAL_RUNTIME_BUG_REPORT', 'FOUR_PDF_VERIFICATION_REPORT']]
 names += ['Docs/LEGACY_ROOT_README.md']
 names += [str(p.relative_to(root)).replace('\\', '/') for p in (root / 'output/verification').glob('*.json')]
 files = {root / name for name in names if (root / name).is_file()}

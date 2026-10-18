@@ -1,5 +1,11 @@
 # Validation record
 
+**Latest remediation — 18 October 2026:** All nine runtime findings are fixed within the tested scope. Full selected suite: **62 passed, 1 skipped**, one warning in 98.54 seconds, plus a passing focused follow-up. Actual packaged four-PDF upload/review/export passed with distinct item classifications and reconciled allocations; no paid calls. See [NINE_FIXES_VERIFICATION.md](NINE_FIXES_VERIFICATION.md). Older findings/results below are historical.
+
+**Latest follow-up — 18 October 2026:** The extraction-fix suite completed with **55 passed, 1 skipped**, one warning in 213.55 seconds; both rebuilt app containers are running. A fresh real four-PDF upload now returns correct types, 27 assertions and six source table rows describing two goods items. Local API and synthetic negative checks found nine further defects; invalid goods totals and a nonnumeric exchange rate can reach exports in a fully populated synthetic control. See [LOCAL_RUNTIME_BUG_REPORT.md](LOCAL_RUNTIME_BUG_REPORT.md). These checks used no paid model calls and do not establish browser success.
+
+**18 October 2026 supplied-input check:** Four original PDFs from `Docs/TEST FILE` passed upload and protected download, but failed extraction accuracy. Only five assertions and no goods rows were returned; the worksheet type was wrong. No downstream correctness or live model success is claimed for these inputs. See [FOUR_PDF_VERIFICATION_REPORT.md](FOUR_PDF_VERIFICATION_REPORT.md). This finding does not invalidate the earlier scoped synthetic results, but prevents claiming general document readiness.
+
 Updated 17 October 2026 (Asia/Colombo). Evidence is in `output/verification/`. These are prototype measurements, not independent certification.
 
 ## Current checks

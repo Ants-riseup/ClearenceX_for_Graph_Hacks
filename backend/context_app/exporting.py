@@ -8,10 +8,8 @@ def metadata(db, sid):
 
 
 def line_items(db, sid):
-    return [{"row_index": r.row_index, "description": r.description, "quantity": r.quantity,
-        "unit": r.unit, "unit_price": r.unit_price, "total_price": r.total_price,
-        "source_reference": r.source_reference, "verified_by": r.verified_by}
-        for r in db.query(CusdecLineItem).filter_by(shipment_id=sid).order_by(CusdecLineItem.row_index)]
+    from .goods import saved_rows
+    return saved_rows(db, sid)
 
 
 def readiness(db, row):

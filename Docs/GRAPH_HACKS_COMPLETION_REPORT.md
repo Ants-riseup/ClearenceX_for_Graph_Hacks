@@ -1,10 +1,16 @@
 # Graph Hacks work plan - completion report
 
+**Latest sign-off — 18 October 2026:** The nine runtime findings reported after the initial extraction repair are now resolved. The running four-PDF flow reaches a correct two-item test XML; 62 selected tests pass with one skipped. See [NINE_FIXES_VERIFICATION.md](NINE_FIXES_VERIFICATION.md). This completes the reported bug-fix scope; broader roadmap and external submission items below retain their stated limits.
+
 **Project:** ClearanceX Context Agent  
 **Updated:** 17 October 2026, Asia/Colombo  
 **Reference:** [GRAPH_HACKS_WORKPLAN.md](../GRAPH_HACKS_WORKPLAN.md)
 
 ## Verdict
+
+**Current local validation — 18 October 2026:** Initial four-PDF classification/extraction defects have been fixed and retested in the running build (55 selected tests passed, one skipped). The application is still **not fully okay**: nine confirmed runtime/serializer/source findings include incomplete export-required fields, incorrect goods export gates, invalid exchange rates reaching XML and missing reviewed-goods invalidation. See [the local runtime bug report](LOCAL_RUNTIME_BUG_REPORT.md). Older observations below are historical within their stated scope.
+
+**New input check — 18 October 2026:** The four supplied PDFs uploaded and downloaded correctly, but extraction accuracy failed: important fields and every goods row were missed, and the customs worksheet was classified as an invoice. The synthetic core-flow results below do not establish readiness for these inputs. See [the four-PDF verification report](FOUR_PDF_VERIFICATION_REPORT.md).
 
 **The core local competition application is implemented and substantially verified. The entire work plan is NOT fully complete.** The plan also contains wider product work, optional research features and external competition tasks. Those must not be marked complete because the core demo works. No misleading overall percentage is assigned.
 

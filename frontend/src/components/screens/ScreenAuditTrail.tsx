@@ -29,21 +29,26 @@ export function ScreenAuditTrail({ onTriggerToast }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+  const [refreshVersion, setRefreshVersion] = useState(0);
 
   const activeId = shipmentId ?? '';
 
   useEffect(() => {
+    const controller = new AbortController();
+    setEntries([]); setSelectedIdx(null);
     if (!activeId) { setLoading(false); setError('Select a dossier to view its real event history.'); return; }
     setLoading(true);
     setError(null);
-    getAuditTrail(activeId)
+    getAuditTrail(activeId, controller.signal)
       .then(res => {
+        if (controller.signal.aborted) return;
         setEntries(res.entries as AuditEntry[]);
         if (res.entries.length > 0) setSelectedIdx(0);
       })
-      .catch(err => setError(err.message || 'Failed to load audit trail.'))
-      .finally(() => setLoading(false));
-  }, [activeId]);
+      .catch(err => { if (!controller.signal.aborted) setError(err.message || 'Failed to load audit trail.'); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [activeId, refreshVersion]);
 
   const handleExport = () => {
     const blob = new Blob([JSON.stringify({ shipment_id: activeId, entries }, null, 2)], { type: 'application/json' });
@@ -68,13 +73,14 @@ export function ScreenAuditTrail({ onTriggerToast }: Props) {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => onTriggerToast({ title: 'Audit trail checked', message: 'The displayed events are available for export.' })}
+            disabled={loading || !activeId}
+            onClick={() => setRefreshVersion(v => v + 1)}
             className="px-3 py-2 rounded-lg bg-surface-container-lowest hover:bg-surface-container text-xs font-semibold flex items-center gap-1.5 border border-outline-variant/30 shadow-sm"
           >
             <span className="material-symbols-outlined text-secondary text-[16px]">verified_user</span>
-            <span>Check audit trail</span>
+            <span>Refresh audit trail</span>
           </button>
-          <button onClick={handleExport}
+          <button disabled={loading || !!error || !activeId} onClick={handleExport}
             className="px-3 py-2 rounded-lg bg-primary text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm">
             <span className="material-symbols-outlined text-[16px]">download</span>
             <span>Export JSON</span>
@@ -179,9 +185,7 @@ export function ScreenAuditTrail({ onTriggerToast }: Props) {
                 <div>
                   <div className="text-[10px] text-outline uppercase mb-1">SHA-256 Event Hash</div>
                   <div className="p-2 bg-surface-container rounded font-mono text-[10px] break-all select-all text-on-surface">
-                    {selected.event_hash.length > 20
-                      ? `${selected.event_hash}...`
-                      : selected.event_hash}
+                    {selected.event_hash}
                   </div>
                 </div>
               )}

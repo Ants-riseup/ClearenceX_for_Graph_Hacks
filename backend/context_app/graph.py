@@ -9,7 +9,7 @@ from reasoning.entity_resolution import resolve_documents, apply_manual_resoluti
 from reasoning.comparison import describe, VERSION
 
 QUERIES = Path(__file__).parent / "queries"
-LABELS = {"Shipment", "Document", "Assertion", "CanonicalField", "Decision", "Memory", "ReviewTask", "RuleEvaluation", "Rule", 'AgentRun', 'ExportSnapshot'}
+LABELS = {"Shipment", "Document", "Assertion", "CanonicalField", "Decision", "Memory", "ReviewTask", "RuleEvaluation", "Rule", 'AgentRun', 'ExportSnapshot', 'GoodsReview'}
 EDGES = {"HAS_DOCUMENT", "HAS_FIELD", "CONTAINS", "ASSERTS_VALUE_FOR", "DEPENDS_ON", "ABOUT", "BASED_ON", "RESOLVES", "DERIVED_FROM", "EVALUATES", "USES_RULE", "SUPPORTED_BY", 'INVESTIGATED', 'PROPOSED', 'RECALLED', 'RETRIEVED'}
 
 
@@ -126,6 +126,12 @@ class GraphRepository:
         from database.connection import SessionLocal
         from .models import AgentRun, ExportArtifact
         with SessionLocal() as db:
+            from database.models import CusdecLineItem
+            from .goods import view
+            for goods in db.query(CusdecLineItem).filter_by(shipment_id=sid):
+                node('GoodsReview', str(goods.id), view(goods))
+                for dependency in (goods.details or {}).get('source_dependencies', []):
+                    edge(str(goods.id), dependency['document_id'], 'DEPENDS_ON')
             runs = db.query(AgentRun).filter_by(dossier_id=sid).all()
             for run in runs:
                 node('AgentRun', run.id, {'id': run.id, 'status': run.status, 'model': run.result.get('model'), 'question': run.question, 'source_revision': run.revision})

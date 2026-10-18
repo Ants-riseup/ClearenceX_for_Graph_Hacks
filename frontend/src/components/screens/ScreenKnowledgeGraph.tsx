@@ -39,7 +39,7 @@ function nodeColor(node: GraphNode): { background: string; border: string; highl
   if (node.type === 'document') {
     return { background: '#1a2466', border: '#6366f1', highlight: { background: '#252580', border: '#818cf8' } };
   }
-  if (node.type === 'canonical_field') return { background: '#581c87', border: '#c084fc', highlight: { background: '#6b21a8', border: '#d8b4fe' } };
+  if (node.type === 'canonical_field' || node.type === 'canonicalfield') return { background: '#581c87', border: '#c084fc', highlight: { background: '#6b21a8', border: '#d8b4fe' } };
   return { background: '#14402e', border: '#10b981', highlight: { background: '#1a5c40', border: '#34d399' } };
 }
 
@@ -56,23 +56,28 @@ export function ScreenKnowledgeGraph({ onTriggerToast }: Props) {
   const [nodeCount, setNodeCount] = useState(0);
   const [edgeCount, setEdgeCount] = useState(0);
   const [isGraphFullscreen, setIsGraphFullscreen] = useState(false);
+  const [refreshVersion, setRefreshVersion] = useState(0);
 
   const activeId = shipmentId ?? '';
 
   // Fetch graph data
   useEffect(() => {
+    const controller = new AbortController();
+    setGraphData(null); setSelectedNode(null); setNodeCount(0); setEdgeCount(0);
     if (!activeId) { setLoading(false); setError('Select a dossier or create a synthetic example in Context Agent.'); return; }
     setLoading(true);
     setError(null);
-    getGraph(activeId)
+    getGraph(activeId, controller.signal)
       .then(data => {
+        if (controller.signal.aborted) return;
         setGraphData(data);
         setNodeCount(data.nodes.length);
         setEdgeCount(data.edges.length);
       })
-      .catch(err => setError(err.message || 'Failed to load graph from backend.'))
-      .finally(() => setLoading(false));
-  }, [activeId]);
+      .catch(err => { if (!controller.signal.aborted) setError(err.message || 'Failed to load graph from backend.'); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [activeId, refreshVersion]);
 
   // Render vis.js network
   useEffect(() => {
@@ -81,10 +86,10 @@ export function ScreenKnowledgeGraph({ onTriggerToast }: Props) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let network: any = null;
     let finalFitTimer: number | null = null;
+    let disposed = false;
 
-    import('vis-network').then(({ Network }) => {
-      import('vis-data').then(({ DataSet }) => {
-        if (!containerRef.current) return;
+    Promise.all([import('vis-network'), import('vis-data')]).then(([{ Network }, { DataSet }]) => {
+        if (disposed || !containerRef.current) return;
 
         const nodes = new DataSet(
           graphData.nodes.map(n => ({
@@ -92,7 +97,7 @@ export function ScreenKnowledgeGraph({ onTriggerToast }: Props) {
             label: n.label,
             color: nodeColor(n),
             title: `Type: ${n.type}\nID: ${n.id}`,
-            shape: n.type === 'shipment' ? 'diamond' : n.type === 'document' ? 'box' : n.type === 'canonical_field' ? 'hexagon' : 'ellipse',
+            shape: n.type === 'shipment' ? 'diamond' : n.type === 'document' ? 'box' : ['canonical_field', 'canonicalfield'].includes(n.type) ? 'hexagon' : 'ellipse',
             font: { color: '#f1f5f9', face: 'Inter', size: 14 },
           }))
         );
@@ -120,6 +125,7 @@ export function ScreenKnowledgeGraph({ onTriggerToast }: Props) {
         // more after the canvas settles) prevents the view being anchored at the
         // top-left and clipping nodes at the canvas edge.
         const fitNetwork = () => {
+          if (disposed) return;
           if (containerRef.current && network) {
             network.setSize(containerRef.current.clientWidth + 'px', containerRef.current.clientHeight + 'px');
           }
@@ -144,10 +150,10 @@ export function ScreenKnowledgeGraph({ onTriggerToast }: Props) {
         });
 
         network.on('deselectNode', () => setSelectedNode(null));
-      });
-    });
+    }).catch(() => { if (!disposed) setError('The graph viewer could not load. Refresh the application, then try again.'); });
 
     return () => {
+      disposed = true;
       if (finalFitTimer !== null) window.clearTimeout(finalFitTimer);
       network?.destroy();
       if (networkRef.current === network) networkRef.current = null;
@@ -187,7 +193,7 @@ export function ScreenKnowledgeGraph({ onTriggerToast }: Props) {
     const a = document.createElement('a');
     a.href = url; a.download = `graph_${activeId.slice(0, 8)}.json`;
     a.click(); URL.revokeObjectURL(url);
-    onTriggerToast({ title: 'Graph Exported', message: 'Full node JSON-LD downloaded.', type: 'success' });
+    onTriggerToast({ title: 'Graph exported', message: 'Nodes and relationships downloaded as JSON.', type: 'success' });
   };
 
   return (
@@ -198,7 +204,7 @@ export function ScreenKnowledgeGraph({ onTriggerToast }: Props) {
           <h1 className="text-2xl font-bold text-on-surface tracking-tight mt-1">Knowledge graph</h1>
           <p className="text-xs md:text-sm text-on-surface-variant mt-1">See how documents, extracted values, and resolved CUSDEC fields relate.</p>
         </div>
-        <button onClick={handleExport} className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold bg-primary text-white rounded-lg shadow-sm hover:bg-primary/90">
+        <button disabled={loading || !!error || !graphData} onClick={handleExport} className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold bg-primary text-white rounded-lg shadow-sm hover:bg-primary/90 disabled:opacity-40">
           <span className="material-symbols-outlined text-[16px]">download</span>
           <span>Export Graph JSON</span>
         </button>
@@ -244,8 +250,9 @@ export function ScreenKnowledgeGraph({ onTriggerToast }: Props) {
               <div className="absolute inset-0 z-10 flex items-center justify-center bg-surface-container-lowest/80 backdrop-blur-sm p-8">
                 <div className="text-center">
                   <span className="material-symbols-outlined text-error text-[40px]">error</span>
-                  <p className="text-sm text-on-surface mt-2 font-semibold">Failed to load graph</p>
+                  <p role="alert" className="text-sm text-on-surface mt-2 font-semibold">Failed to load graph</p>
                   <p className="text-xs text-on-surface-variant mt-1">{error}</p>
+                  <button onClick={() => window.location.reload()} className="mt-3 text-primary underline">Refresh application</button>
                 </div>
               </div>
             )}
@@ -301,7 +308,8 @@ export function ScreenKnowledgeGraph({ onTriggerToast }: Props) {
           </div>
 
           <button
-            onClick={() => { setLoading(true); getGraph(activeId).then(d => { setGraphData(d); setNodeCount(d.nodes.length); setEdgeCount(d.edges.length); }).finally(() => setLoading(false)); }}
+            disabled={loading || !activeId}
+            onClick={() => setRefreshVersion(v => v + 1)}
             className="w-full py-2.5 rounded-lg bg-primary hover:bg-primary/90 text-white font-semibold flex items-center justify-center gap-1.5 shadow-sm text-xs"
           >
             <span className="material-symbols-outlined text-[16px]">refresh</span>

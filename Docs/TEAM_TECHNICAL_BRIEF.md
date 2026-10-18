@@ -48,3 +48,8 @@ Human-entered goods arithmetic uses decimal rounding. Readiness and source revis
 8. Why are public uploads, tariffs, multi-agent handoffs and official customs acceptance still limited?
 9. How do RDB snapshots, the PostgreSQL outbox and restart reconstruction work together?
 10. What work existed before the event, and what work was done during it?
+
+
+## Reviewed goods and export gates
+
+Digital column tables retain item HS codes, origin and financial values. Each goods review is tied to a current invoice row and any matched packing-source revision. GoodsReview graph nodes depend on those sources; graph impact invalidates reviewed rows when a source changes. Unique source-row identity prevents duplicate retries. A complete review must reconcile every invoice row, gross/net/package totals, currency and valuation basis. Decimal freight/insurance allocation preserves the grand total. XML uses each item's own values. Typed metadata is validated at save and export; the template remains a prototype pending official compatibility review.

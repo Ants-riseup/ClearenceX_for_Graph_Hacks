@@ -1,0 +1,38 @@
+{
+  "date": "2026-10-18",
+  "paid_model_calls": 0,
+  "browser_verified": false,
+  "checks": {
+    "graph": {
+      "nodes": 79,
+      "edges": 195,
+      "all_edge_targets_exist": true
+    },
+    "audit": {
+      "events": 6,
+      "browser_review_decision_and_goods_saves_present": true
+    },
+    "batch": {
+      "id": "0918cbbc-1fa1-4e4f-bfd7-0a338fd81733",
+      "status": "partial",
+      "prepared": "04c681ac-cbf6-444a-8dbc-8a0c1998566c",
+      "blocked": "70228036-5821-4401-a0f5-b64ad5056c0f",
+      "xml_count": 1,
+      "manifest_matches": true,
+      "repeat_request_idempotent": true,
+      "sha256": "94c567f4895bccbae4f169cd7713874a22a721f799b621d9617c34834c358531"
+    },
+    "upload_invalid_inputs": {
+      "empty_status": 422,
+      "malformed_status": 422
+    },
+    "routes": {
+      "/dossiers": 200,
+      "/knowledge-graph": 200,
+      "/batch-filing": 200,
+      "/audit-trail": 200,
+      "/tariff-directory": 200
+    }
+  },
+  "status": "passed"
+}

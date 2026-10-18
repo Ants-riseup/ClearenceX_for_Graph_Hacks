@@ -23,7 +23,6 @@ EXTRACTED_REQUIREMENTS: dict[str, str] = {
     "COUNTRY_OF_ORIGIN": "Country of origin",
     "PORT_OF_LOADING": "Place of loading",
     "PORT_OF_DISCHARGE": "Place of discharge",
-    "HS_CODE": "Commodity HS code",
 }
 
 # These do not reliably appear in the commercial documents processed by the
@@ -98,8 +97,14 @@ def build_cusdec_readiness(
 
     if not documents:
         blockers.append(_issue("NO_DOCUMENTS", "dossier", "No processed source documents are available."))
+    for document in documents:
+        if document.get('quality_status') == 'partial' and document.get('document_type') != 'customs_worksheet':
+            blockers.append(_issue('PARTIAL_EXTRACTION', 'documents',
+                f"{document.get('source_filename', 'Source document')} has incomplete extraction or failed reconciliation; review the source before export."))
 
     for entity_type, label in EXTRACTED_REQUIREMENTS.items():
+        if entity_type == 'COUNTRY_OF_ORIGIN' and verified_line_items and all(re.fullmatch(r'[A-Z]{2}', str(r.get('origin',''))) for r in verified_line_items if r.get('validity_state') == 'current') and any(r.get('validity_state')=='current' for r in verified_line_items):
+            continue # Mixed origins are validated on each item, not forced into a single header.
         field = resolved.get(entity_type)
         if field is None or field.get("consensus_value") in (None, ""):
             blockers.append(_issue("MISSING_FIELD", entity_type, f"{label} is missing."))
@@ -124,16 +129,19 @@ def build_cusdec_readiness(
     if not (resolved.get("AWB_NUMBER") or resolved.get("BL_NUMBER")):
         blockers.append(_issue("MISSING_TRANSPORT_DOCUMENT", "transport_document", "An AWB or bill of lading is required."))
 
-    if not _has_line_items(documents, verified_line_items):
-        blockers.append(_issue(
-            "MISSING_LINE_ITEMS", "line_items",
-            "No extracted goods line items are available for commodity and valuation validation.",
-        ))
+    from .goods_validation import check_goods
+    goods_blockers, prepared = check_goods(documents, fields, verified_line_items)
+    blockers.extend(goods_blockers)
 
     profile = _profile(documents, declaration_metadata)
     for key, label in PROFILE_REQUIREMENTS.items():
         if profile.get(key) in (None, ""):
             blockers.append(_issue("MISSING_DECLARATION_METADATA", key, f"{label} has not been supplied.", source="declaration profile"))
+    from .declaration_validation import validate_profile
+    try:
+        validate_profile(profile)
+    except ValueError as exc:
+        blockers.append(_issue('INVALID_DECLARATION_METADATA', 'profile', str(exc), source='declaration profile'))
 
     return {
         "status": "ready" if not blockers else "blocked",
@@ -144,5 +152,6 @@ def build_cusdec_readiness(
         "required_extracted_field_count": len(EXTRACTED_REQUIREMENTS),
         "profile": {key: profile.get(key) for key in PROFILE_REQUIREMENTS if profile.get(key) not in (None, "")},
         "line_items": verified_line_items or [],
+        "prepared_line_items": prepared,
         "notice": "Exports are blocked until source evidence, declaration metadata, and source-referenced goods rows are complete.",
     }

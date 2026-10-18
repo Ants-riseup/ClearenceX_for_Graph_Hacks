@@ -1,0 +1,81 @@
+{
+  "date": "2026-10-18",
+  "scope": "real four original PDFs, actual localhost:8080 HTTP proxy, packaged worker and FalkorDB; automated QA approvals, not real declaration approval",
+  "paid_calls": 0,
+  "checks": {
+    "required_source_fields_present": true,
+    "invalid_exchange_rates_rejected": true,
+    "invented_goods_reference_rejected": true,
+    "partial_goods_export_blocked": true,
+    "duplicate_review_is_idempotent": true,
+    "save_response_matches_readiness_get": true,
+    "complete_review_is_ready": true,
+    "overview_api_reports_ready_after_review": true,
+    "goods_reviews_projected_to_falkordb": true
+  },
+  "shipment_id": "04c681ac-cbf6-444a-8dbc-8a0c1998566c",
+  "documents": [
+    {
+      "filename": "Air Waybill.pdf",
+      "type": "awb",
+      "fields": 9,
+      "rows": 0,
+      "original_hash_matches": true
+    },
+    {
+      "filename": "Commercial Invoice (1).pdf",
+      "type": "commercial_invoice",
+      "fields": 11,
+      "rows": 2,
+      "original_hash_matches": true
+    },
+    {
+      "filename": "Customs Declaration Entry Worksheet.pdf",
+      "type": "customs_worksheet",
+      "fields": 8,
+      "rows": 2,
+      "original_hash_matches": true
+    },
+    {
+      "filename": "Export Packing List.pdf",
+      "type": "packing_list",
+      "fields": 5,
+      "rows": 2,
+      "original_hash_matches": true
+    }
+  ],
+  "export": {
+    "export_id": "151a734f-f1aa-4bc5-827e-a7defce4ec5f",
+    "items": 2,
+    "hs_codes": [
+      "90318000",
+      "85371090"
+    ],
+    "gross_kg": [
+      "48.00",
+      "72.00"
+    ],
+    "net_kg": [
+      "40.00",
+      "60.00"
+    ],
+    "packages": [
+      "4",
+      "4"
+    ],
+    "item_cif_usd": [
+      "8068.97",
+      "7531.03"
+    ],
+    "invoice_total_usd": "15600.00",
+    "sha256": "34419ffa2abfcd72c8a52c69582dc7546169821c7ed4ef3761d65f8d8af58e11",
+    "test_only": true
+  },
+  "graph": {
+    "nodes": 78,
+    "edges": 188
+  },
+  "status": "passed",
+  "title": "QA validated four-PDF example (automated test review)",
+  "browser_verified": false
+}

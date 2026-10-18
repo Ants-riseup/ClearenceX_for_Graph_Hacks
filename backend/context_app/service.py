@@ -120,7 +120,7 @@ def context_view(sid, user):
             "tasks": row.state.get("tasks", []), "decisions": row.state.get("decisions", []),
             "events": row.state.get("events", []),
             'archived_documents': [{k: d.get(k) for k in ('document_id', 'source_filename', 'document_type', 'revision')} for d in row.state.get('archived_documents', [])],
-            "documents": [{k: d.get(k) for k in ("document_id", "source_filename", "document_type", "revision", "fixture", 'warnings', 'extraction_method', 'line_items')} for d in row.state.get("documents", [])]}
+            "documents": [{k: d.get(k) for k in ("document_id", "source_filename", "document_type", "revision", "fixture", 'warnings', 'extraction_method', 'line_items', 'quality_status', 'missing_fields', 'source_role')} for d in row.state.get("documents", [])]}
 
 
 def graph_tool(sid, user, name, expected=None, **arguments):
@@ -218,6 +218,10 @@ def replace_document(sid, user, document_id, replacement, expected):
         # Graph-derived impact is required: no SQL-based substitute.
         impact = GraphRepository(row.tenant_id).impact(sid, row.revision, document_id)
         affected = {i["id"] for i in impact}
+        from database.models import CusdecLineItem
+        for goods in db.query(CusdecLineItem).filter_by(shipment_id=sid, validity_state='current'):
+            if str(goods.id) in affected:
+                goods.validity_state = 'stale'
         for decision in state["decisions"]:
             if decision["id"] in affected and decision["validity_state"] == "current":
                 decision["validity_state"] = "stale"
@@ -227,6 +231,10 @@ def replace_document(sid, user, document_id, replacement, expected):
         state["documents"].remove(old)
         state["archived_documents"].append(old)
         replacement["revision"] = old.get("revision", 1) + 1
+        for goods_row in replacement.get('line_items', []):
+            for key in ('row_id', 'source_reference'):
+                if isinstance(goods_row.get(key), str):
+                    goods_row[key] = goods_row[key].replace(old['document_id'], replacement['document_id'], 1)
         state["documents"].append(replacement)
         enqueue(db, row, state, user["id"], "source_replaced", {"old_document_id": document_id,
             "new_document_id": replacement["document_id"], "impact": impact})

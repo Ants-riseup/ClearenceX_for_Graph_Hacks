@@ -18,6 +18,7 @@ from api.routes import router
 from context_app.upload import router as upload_router, process_one_upload
 from context_app.workspace import router as workspace_router
 from context_app.exports import router as export_router
+from context_app.goods import router as goods_router
 
 logger = logging.getLogger(__name__)
 
@@ -134,6 +135,7 @@ app.include_router(auth_router)
 app.include_router(context_router)
 app.include_router(workspace_router)
 app.include_router(export_router)
+app.include_router(goods_router)
 app.include_router(router)
 app.include_router(upload_router)
 app.add_middleware(BodyLimitMiddleware)

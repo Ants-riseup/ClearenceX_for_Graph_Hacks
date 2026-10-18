@@ -1,0 +1,9 @@
+{
+  "status": "passed",
+  "action": "API restarted, authenticated again, checked current reviewed goods and downloaded same export",
+  "shipment_id": "04c681ac-cbf6-444a-8dbc-8a0c1998566c",
+  "reviewed_goods_rows": 2,
+  "export_allowed": true,
+  "export_content_hash_unchanged": true,
+  "paid_calls": 0
+}

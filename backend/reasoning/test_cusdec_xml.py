@@ -1,3 +1,4 @@
+from decimal import Decimal
 from xml.etree import ElementTree as ET
 
 from reasoning.cusdec_xml import TEMPLATE_VERSION, generate_cusdec_xml
@@ -21,9 +22,9 @@ def test_generate_cusdec_xml_uses_the_confirmed_template_structure():
         "general_procedure_code": "4", "exporter_code": "EXP01",
         "consignee_code": "TIN01", "declarant_code": "CHA01",
         "declarant_name": "Clearance Agent", "transport_mode": "1",
-        "container_flag": "true", "currency_rate": "305.00",
+        "container_flag": "1", "currency_rate": "305.00",
     }
-    line_items = [{"row_index": 1, "description": "Cotton fabric", "total_price": 125.0}]
+    line_items = [{"row_index": 1, "description": "Cotton fabric", "total_price": 125.0, "invoice_amount": "125.00", "hs_code": "61091000", "origin": "CN", "gross_weight": "30", "net_weight": "25", "package_count": "2"}]
 
     root = ET.fromstring(generate_cusdec_xml(fields, metadata, line_items))
 
@@ -32,4 +33,4 @@ def test_generate_cusdec_xml_uses_the_confirmed_template_structure():
     assert root.findtext("Identification/Office_segment/Customs_clearance_office_code") == "CBCOL"
     assert root.findtext("Traders/Consignee/Consignee_code") == "TIN01"
     assert root.findtext("Item/Tariff/Commodity_code") == "61091000"
-    assert root.findtext("Item/Valuation_item/Statistical_value") == "38125.0"
+    assert Decimal(root.findtext("Item/Valuation_item/Statistical_value")) == Decimal("38125")

@@ -1,0 +1,135 @@
+{
+  "date": "2026-10-18",
+  "verdict": "failed extraction accuracy; application not fully verified",
+  "shipment_id": "6fe1e637-1cb0-408b-8956-354c09802455",
+  "transport": "real HTTP through frontend /api proxy",
+  "upload_http": 202,
+  "processing_status": "done",
+  "completed_documents": 4,
+  "total_documents": 4,
+  "total_assertions": 5,
+  "paid_model_calls": 0,
+  "documents": [
+    {
+      "filename": "Air Waybill.pdf",
+      "sha256": "e0610577ff5ff5fed4a353dce8d128c14ee188f7fc322d5dd471bb0412fefb20",
+      "expected": {
+        "type": "awb",
+        "required_fields": [
+          "AWB_NUMBER",
+          "GROSS_WEIGHT",
+          "PACKAGE_COUNT",
+          "CONSIGNEE_NAME",
+          "SHIPPER_NAME",
+          "CURRENCY_CODE"
+        ],
+        "minimum_goods_rows": 0
+      },
+      "actual_type": "awb",
+      "extracted_fields": [
+        "CURRENCY_CODE"
+      ],
+      "missing_expected_fields": [
+        "AWB_NUMBER",
+        "CONSIGNEE_NAME",
+        "GROSS_WEIGHT",
+        "PACKAGE_COUNT",
+        "SHIPPER_NAME"
+      ],
+      "goods_rows": 0,
+      "private_pdf_http": 200,
+      "private_pdf_matches_input": true
+    },
+    {
+      "filename": "Commercial Invoice (1).pdf",
+      "sha256": "a5e4d8b0d5f68c242e8382c5e5eb2325ec052a297b62a8ef9bbb93d223b655ff",
+      "expected": {
+        "type": "commercial_invoice",
+        "required_fields": [
+          "INVOICE_NUMBER",
+          "CONSIGNEE_NAME",
+          "SHIPPER_NAME",
+          "INCOTERM",
+          "CURRENCY_CODE",
+          "TOTAL_AMOUNT"
+        ],
+        "minimum_goods_rows": 2
+      },
+      "actual_type": "commercial_invoice",
+      "extracted_fields": [
+        "CURRENCY_CODE",
+        "INVOICE_NUMBER"
+      ],
+      "missing_expected_fields": [
+        "CONSIGNEE_NAME",
+        "INCOTERM",
+        "SHIPPER_NAME",
+        "TOTAL_AMOUNT"
+      ],
+      "goods_rows": 0,
+      "private_pdf_http": 200,
+      "private_pdf_matches_input": true
+    },
+    {
+      "filename": "Customs Declaration Entry Worksheet.pdf",
+      "sha256": "d18b54ca9a0cb9e04628d0c333b93dc7c57653365dc6d28bbe1cee3fb305897a",
+      "expected": {
+        "type": "customs_worksheet_or_explicit_unsupported",
+        "required_fields": [
+          "AWB_NUMBER",
+          "PACKAGE_COUNT",
+          "INCOTERM",
+          "TOTAL_AMOUNT"
+        ],
+        "minimum_goods_rows": 2
+      },
+      "actual_type": "commercial_invoice",
+      "extracted_fields": [
+        "TOTAL_AMOUNT"
+      ],
+      "missing_expected_fields": [
+        "AWB_NUMBER",
+        "INCOTERM",
+        "PACKAGE_COUNT"
+      ],
+      "goods_rows": 0,
+      "private_pdf_http": 200,
+      "private_pdf_matches_input": true
+    },
+    {
+      "filename": "Export Packing List.pdf",
+      "sha256": "10cce87a34a0aabd6ee42cf20cb0c5d7fc54b8a42decbbbd77428bd157812922",
+      "expected": {
+        "type": "packing_list",
+        "required_fields": [
+          "GROSS_WEIGHT",
+          "NET_WEIGHT",
+          "PACKAGE_COUNT",
+          "CONSIGNEE_NAME"
+        ],
+        "minimum_goods_rows": 2
+      },
+      "actual_type": "packing_list",
+      "extracted_fields": [
+        "PACKAGE_COUNT"
+      ],
+      "missing_expected_fields": [
+        "CONSIGNEE_NAME",
+        "GROSS_WEIGHT",
+        "NET_WEIGHT"
+      ],
+      "goods_rows": 0,
+      "private_pdf_http": 200,
+      "private_pdf_matches_input": true
+    }
+  ],
+  "not_verified_after_first_broken_boundary": [
+    "downstream graph semantic correctness",
+    "review correctness",
+    "live agent correctness on these inputs",
+    "export correctness",
+    "browser click-through"
+  ],
+  "application_source_changed": false,
+  "overview_design_changed": false
+}

@@ -111,3 +111,6 @@ The packaged MCP smoke uses a real stdio client, authenticated HTTP and FalkorDB
 Primary intended track: Agents That Act on Connected Data. Enter memory/other tracks only for demonstrated capabilities. Confirm existing-project reuse eligibility with the organizers. The team must register, verify licensing/data permissions, record the actual working demo and submit; no submission or public deployment is performed by this repository.
 
 AI assistance disclosure: Codex assisted with this implementation and tests. Team members must inspect, verify and understand the submitted code. Earlier project components are retained and identified in the delta record.
+
+
+Latest four-PDF verification: [nine runtime fixes and tested output](Docs/NINE_FIXES_VERIFICATION.md). The current local build supports source-linked per-item goods review, stale-review invalidation, Decimal valuation allocation and authoritative Overview readiness while retaining the original Overview design.

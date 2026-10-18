@@ -1,0 +1,195 @@
+{
+  "date": "2026-10-18",
+  "overall": "not fully okay; nine confirmed findings within tested scope",
+  "regression": {
+    "passed": 55,
+    "skipped": 1,
+    "warning_count": 1,
+    "seconds": 213.55
+  },
+  "four_pdf_dossier": {
+    "shipment_id": "70a67012-16d0-4033-9466-8efdcc8bc7d9",
+    "processing": "done",
+    "documents": [
+      {
+        "filename": "Air Waybill.pdf",
+        "type": "awb",
+        "assertions": 7,
+        "goods_rows": 0,
+        "quality_status": "extracted_needs_review"
+      },
+      {
+        "filename": "Commercial Invoice (1).pdf",
+        "type": "commercial_invoice",
+        "assertions": 8,
+        "goods_rows": 2,
+        "quality_status": "extracted_needs_review"
+      },
+      {
+        "filename": "Customs Declaration Entry Worksheet.pdf",
+        "type": "customs_worksheet",
+        "assertions": 7,
+        "goods_rows": 2,
+        "quality_status": "extracted_needs_review"
+      },
+      {
+        "filename": "Export Packing List.pdf",
+        "type": "packing_list",
+        "assertions": 5,
+        "goods_rows": 2,
+        "quality_status": "extracted_needs_review"
+      }
+    ],
+    "graph": {
+      "nodes": 50,
+      "edges": 120
+    },
+    "export_allowed": false,
+    "blocker_codes": [
+      "MISSING_DECLARATION_METADATA",
+      "MISSING_FIELD",
+      "UNRESOLVED_FIELD",
+      "UNVERIFIED_GOODS"
+    ],
+    "missing_fields": [
+      "COUNTRY_OF_ORIGIN",
+      "PORT_OF_LOADING",
+      "PORT_OF_DISCHARGE",
+      "HS_CODE"
+    ],
+    "blocked_export_http": 422,
+    "anonymous_pdf_http": 401
+  },
+  "http_probes": {
+    "scope": "isolated QA tenant using copied source PDFs; automated test approvals only",
+    "paid_calls": 0,
+    "cases": {
+      "foreign_dossier_denied": {
+        "http": 404
+      },
+      "nonexistent_source_reference": {
+        "http": 200,
+        "stored_source": "DOCUMENT-DOES-NOT-EXIST:page:999:row:999"
+      },
+      "one_wrong_row_clears_all_goods_verification": {
+        "before_codes": [
+          "UNVERIFIED_GOODS",
+          "MISSING_FIELD",
+          "MISSING_FIELD",
+          "MISSING_FIELD",
+          "MISSING_FIELD"
+        ],
+        "after_codes": [
+          "MISSING_FIELD",
+          "MISSING_FIELD",
+          "MISSING_FIELD",
+          "MISSING_FIELD"
+        ],
+        "after_export_allowed": false,
+        "stored_rows": 1,
+        "stored_goods_total": 1.0,
+        "invoice_total": 15600
+      },
+      "incorrect_goods_export": {
+        "http": 422,
+        "created": false
+      },
+      "metadata_save_response_differs_from_get": {
+        "post_codes": [
+          "UNVERIFIED_GOODS",
+          "MISSING_FIELD",
+          "MISSING_FIELD",
+          "MISSING_FIELD",
+          "MISSING_FIELD"
+        ],
+        "get_codes": [
+          "MISSING_FIELD",
+          "MISSING_FIELD",
+          "MISSING_FIELD",
+          "MISSING_FIELD"
+        ],
+        "post_row_count": 0,
+        "get_row_count": 1
+      },
+      "invalid_exchange_rate": {
+        "save_http": 200,
+        "readiness_export_allowed": false,
+        "export_http": 422,
+        "stored_rate": "NOT-A-NUMBER"
+      },
+      "same_goods_row_saved_twice": {
+        "first_http": 200,
+        "second_http": 200,
+        "matching_saved_rows": 2
+      },
+      "goods_survive_source_revision_without_invalidation": {
+        "type_correction_http": 200,
+        "old_document_still_current": false,
+        "old_source_rows_still_verified": 2,
+        "validity_flags": [
+          null,
+          null,
+          null
+        ]
+      },
+      "nonfinite_quantity_rejected": {
+        "http": 400
+      }
+    },
+    "shipment_id": "25862a0c-1797-465f-b3ef-aebb61ae1587",
+    "status": "completed"
+  },
+  "synthetic_export_control": {
+    "fixture": "explicit synthetic control; unrelated to four-PDF extraction",
+    "shipment_id": "49506ea5-2ea9-409a-bac1-24ce9e6373ef",
+    "paid_calls": 0,
+    "baseline_blockers": [
+      "UNVERIFIED_GOODS"
+    ],
+    "incomplete_wrong_goods": {
+      "readiness_export_allowed": true,
+      "invoice_total": 1000,
+      "stored_goods_total": 1.0,
+      "expected_goods_rows": 2,
+      "stored_goods_rows": 1
+    },
+    "wrong_goods_export_http": 201,
+    "wrong_goods_download_http": 200,
+    "invalid_rate_save_http": 200,
+    "invalid_rate_readiness_allowed": true,
+    "invalid_rate_export_http": 201,
+    "invalid_rate_literal_in_xml": true
+  },
+  "item_serializer_control": {
+    "layer": "actual local XML serializer; synthetic two-row values, no HTTP submission",
+    "expected": [
+      {
+        "hs_code": "903180",
+        "gross_weight": 48,
+        "packages": 4
+      },
+      {
+        "hs_code": "853710",
+        "gross_weight": 72,
+        "packages": 4
+      }
+    ],
+    "actual": [
+      {
+        "hs_code": "903180",
+        "gross_weight": "120",
+        "packages": "8"
+      },
+      {
+        "hs_code": "903180",
+        "gross_weight": "120",
+        "packages": "8"
+      }
+    ],
+    "paid_calls": 0
+  },
+  "browser_verified": false,
+  "paid_calls": 0,
+  "original_pdf_files_changed": false,
+  "overview_design_changed": false
+}

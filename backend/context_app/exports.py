@@ -30,14 +30,14 @@ def prepare(sid, user, expected, request_id):
         check = readiness(db, row)
         if not check['export_allowed']:
             raise HTTPException(422, {'message': 'Resolve readiness blockers before export.', 'readiness': check})
-        xml = generate_cusdec_xml(fields(row.state, row.id), metadata(db, row.id), line_items(db, row.id))
+        xml = generate_cusdec_xml(fields(row.state, row.id), metadata(db, row.id), check['prepared_line_items'])
         if isinstance(xml, bytes):
             xml = xml.decode('utf-8')
         decisions = [d for d in row.state['decisions'] if d['status'] == 'approved' and d['validity_state'] == 'current']
         payload = {'template': check.get('template_version', 'clearancex-prototype'), 'sha256': hashlib.sha256(xml.encode()).hexdigest(),
             'decision_ids': [d['id'] for d in decisions], 'reviewer_id': user['id'], 'source_revision': row.revision,
             'created_at': now(), 'notice': check['notice'], 'metadata': metadata(db, row.id),
-            'line_items': line_items(db, row.id), 'fields': [{'field_id': f['canonical_field_id'], 'value': f['consensus_value'], 'assertions': [a['assertion_id'] for a in f['assertions']]} for f in fields(row.state, row.id)]}
+            'line_items': check['prepared_line_items'], 'fields': [{'field_id': f['canonical_field_id'], 'value': f['consensus_value'], 'assertions': [a['assertion_id'] for a in f['assertions']]} for f in fields(row.state, row.id)]}
         artifact = ExportArtifact(id=request_id, dossier_id=sid, actor_id=user['id'], source_revision=row.revision,
             validity_state='current', created_at=now(), payload=payload, xml=xml)
         db.add(artifact)

@@ -6,6 +6,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 os.environ.setdefault("DATABASE_URL", "postgresql://test:clearancex_local_test_only@localhost:5449/clearancex_test")
 os.environ.setdefault("FALKORDB_PORT", "6399")
+os.environ.setdefault("FALKORDB_HOST", "127.0.0.1")
 os.environ.setdefault("FALKORDB_PASSWORD", "clearancex_graph_test_only")
 os.environ.setdefault("CORS_ORIGINS", "http://localhost:5173")
 os.environ.setdefault("UPLOAD_ROOT", str(Path(__file__).parent / ".test_uploads"))

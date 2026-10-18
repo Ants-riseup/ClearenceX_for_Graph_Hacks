@@ -14,21 +14,33 @@ from conftest import sync, account
 from test_context_flow import approve, evidence, status
 
 
+def valid_profile():
+    return {key: {'currency_rate':'305','transport_mode':'4','container_flag':'0','general_procedure_code':'4','declaration_type':'IM'}.get(key, 'SYNTHETIC-'+key) for key in PROFILE_REQUIREMENTS}
+
+
 def ready_dossier(user):
     docs = hero_documents()[:2]
     values = {'INVOICE_NUMBER': 'SYNTHETIC-100', 'CONSIGNEE_NAME': 'Example Importer', 'SHIPPER_NAME': 'Example Exporter',
         'TOTAL_AMOUNT': 120, 'CURRENCY_CODE': 'USD', 'INCOTERM': 'CIF', 'GROSS_WEIGHT': 450, 'PACKAGE_COUNT': 12,
-        'COUNTRY_OF_ORIGIN': 'India', 'PORT_OF_LOADING': 'Chennai', 'PORT_OF_DISCHARGE': 'Colombo', 'HS_CODE': '61091000', 'AWB_NUMBER': 'SYNTHETIC-AWB'}
+        'COUNTRY_OF_ORIGIN': 'IN', 'PORT_OF_LOADING': 'Chennai', 'PORT_OF_DISCHARGE': 'Colombo', 'HS_CODE': '61091000', 'AWB_NUMBER': 'SYNTHETIC-AWB'}
     for doc in docs:
         doc['entities'] = [{'entity_type': field, 'value': str(value), 'normalized_value': value, 'page': 1, 'bbox': [],
             'unit': 'kg' if field == 'GROSS_WEIGHT' else None, 'extraction_confidence': 0} for field, value in values.items()]
         doc['content_hash'] = write_pdf(Path(doc['file_path']), ['SYNTHETIC EXPORT TEST'] + [f'{field}: {value}' for field, value in values.items()])
+    ref = docs[0]['document_id'] + ':page:1:row:1'
+    docs[0]['line_items'] = [{'description':'Synthetic shirts','quantity':'12','unit':'PCS','unit_price':'10','total_price':'120',
+        'hs_code':'61091000','origin':'IN','gross_weight':'450','net_weight':'420','package_count':'12','currency':'USD',
+        'source_reference':ref,'page':1,'status':'needs_review'}]
     sid = create_dossier(user, docs, 'Complete synthetic export test')
     with SessionLocal() as db:
-        for key in PROFILE_REQUIREMENTS:
-            db.add(DeclarationMetadata(shipment_id=sid, field_name=key, value='1' if key == 'currency_rate' else f'SYNTHETIC-{key}'))
+        for key, value in valid_profile().items():
+            db.add(DeclarationMetadata(shipment_id=sid, field_name=key, value=value))
+        from reasoning.goods_validation import inventory, normalize_review
+        candidate = inventory(docs)[0]
+        details = normalize_review(candidate, candidate)
         db.add(CusdecLineItem(shipment_id=sid, row_index=1, description='Synthetic shirts', quantity=12, unit='PCS', unit_price=10,
-            total_price=120, source_reference=docs[0]['document_id'], verified_by=user['id']))
+            total_price=120, source_reference=ref, verified_by=user['id'], source_document_id=docs[0]['document_id'],
+            source_revision=1, source_row_id=ref, validity_state='current', details=details))
         db.commit()
     sync(sid)
     return sid

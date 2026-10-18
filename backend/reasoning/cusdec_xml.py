@@ -9,6 +9,8 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 from xml.etree import ElementTree as ET
+from decimal import Decimal, ROUND_HALF_UP
+from .declaration_validation import validate_profile, number, money, hs_code as validated_hs
 
 
 TEMPLATE_VERSION = "user-confirmed-asycuda-template-v1"
@@ -48,7 +50,23 @@ def generate_cusdec_xml(
 ) -> str:
     """Serialize the resolved declaration into the confirmed ASYCUDA template."""
     values = _field_values(fields)
-    metadata = declaration_metadata
+    metadata = validate_profile(declaration_metadata)
+    rate = number(metadata.get('currency_rate'), positive=True)
+    if not line_items:
+        raise ValueError('At least one completely reviewed goods item is required.')
+    for item in line_items:
+        validated_hs(item.get('hs_code'))
+        if not _country_code(item.get('origin')):
+            raise ValueError('Every item requires its own country of origin.')
+        number(item.get('gross_weight'), positive=True)
+        number(item.get('net_weight'))
+        number(item.get('package_count'), positive=True, integer=True)
+        number(item.get('invoice_amount'), positive=True)
+    if money(sum((number(i['invoice_amount']) for i in line_items), Decimal(0))) != money(values.get('TOTAL_AMOUNT')):
+        raise ValueError('Item invoice amounts do not reconcile to the header.')
+    for key, field in [('gross_weight','GROSS_WEIGHT'), ('package_count','PACKAGE_COUNT')]:
+        if abs(sum((number(i[key]) for i in line_items), Decimal(0))-number(values.get(field))) > Decimal('.01'):
+            raise ValueError('Item allocation does not reconcile to the shipment header.')
 
     root = ET.Element("ASYCUDA", {"xmlns:xsi": XSI_NAMESPACE})
 
@@ -115,35 +133,29 @@ def generate_cusdec_xml(
         _add_if_present(bank, "Branch", metadata.get("financial_branch"))
     _add_if_present(financial, "Terms_of_payment", metadata.get("terms_of_payment"))
 
-    hs_code = values.get("HS_CODE", "")
-    package_count = values.get("PACKAGE_COUNT", "")
-    gross_weight = values.get("GROSS_WEIGHT", "")
     currency = values.get("CURRENCY_CODE", "")
     exchange_rate = metadata["currency_rate"]
     for position, item in enumerate(line_items, start=1):
         declaration_item = ET.SubElement(root, "Item")
-        _text(declaration_item, "Item_Number", item.get("row_index", position))
+        _text(declaration_item, "Item_Number", position)
         tariff = ET.SubElement(declaration_item, "Tariff")
-        _text(tariff, "Commodity_code", hs_code)
+        _text(tariff, "Commodity_code", validated_hs(item['hs_code']))
         _add_if_present(tariff, "National_customs_codes", metadata.get("national_customs_codes"))
         goods = ET.SubElement(declaration_item, "Goods_description")
         _text(goods, "Commercial_description", item["description"])
-        _add_if_present(goods, "Country_of_origin_code", origin_code)
+        _add_if_present(goods, "Country_of_origin_code", _country_code(item['origin']))
         packages = ET.SubElement(declaration_item, "Packages")
-        _text(packages, "Number_of_packages", package_count)
+        _text(packages, "Number_of_packages", item['package_count'])
         _add_if_present(packages, "Type_of_packages_code", metadata.get("package_type_code"))
         _add_if_present(packages, "Marks_and_numbers", metadata.get("marks_and_numbers"))
         weight = ET.SubElement(declaration_item, "Weight")
-        _text(weight, "Gross_mass", gross_weight)
-        _add_if_present(weight, "Net_mass", values.get("NET_WEIGHT"))
+        _text(weight, "Gross_mass", item['gross_weight'])
+        _text(weight, "Net_mass", item['net_weight'])
         valuation = ET.SubElement(declaration_item, "Valuation_item")
-        _text(valuation, "Item_Invoice_amount", item["total_price"])
+        _text(valuation, "Item_Invoice_amount", item['invoice_amount'])
         _text(valuation, "Currency_code", currency)
         _text(valuation, "Rate_of_exchange", exchange_rate)
-        try:
-            statistical_value = round(float(item["total_price"]) * float(exchange_rate), 2)
-        except (TypeError, ValueError):
-            statistical_value = ""
+        statistical_value = (number(item['invoice_amount'])*rate).quantize(Decimal('.01'), rounding=ROUND_HALF_UP)
         _text(valuation, "Statistical_value", statistical_value)
 
     return ET.tostring(root, encoding="unicode", xml_declaration=True)

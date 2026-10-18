@@ -60,10 +60,11 @@ def test_pending_source_field_blocks_export():
     )
 
 
-def test_confirmed_template_removes_the_schema_placeholder_blocker():
+def test_schema_presence_does_not_bypass_unverified_goods_or_invalid_profile():
     readiness = build_cusdec_readiness([_complete_document()], _complete_fields())
-    assert readiness["blocker_count"] == 0
-    assert readiness["export_allowed"] is True
+    assert readiness['export_allowed'] is False
+    assert any(b['code']=='INVALID_DECLARATION_METADATA' for b in readiness['blockers'])
+
 
 
 def test_reviewer_declaration_metadata_satisfies_profile_requirements():
@@ -89,4 +90,5 @@ def test_verified_line_item_satisfies_goods_row_requirement():
         [{"description": "Cotton fabric", "quantity": 10, "source_reference": "Invoice p. 1"}],
     )
 
-    assert not any(blocker["code"] == "MISSING_LINE_ITEMS" for blocker in readiness["blockers"])
+    assert any(blocker['code'] == 'MISSING_LINE_ITEMS' for blocker in readiness['blockers'])
+    assert not readiness['export_allowed'] # A free-form row is not a source-backed review.

@@ -12,7 +12,7 @@ During this implementation session the local stack was started and a reviewer ac
 
 Additional accounts: use the same `--tenant` name to add a teammate, or a different name to create an isolated workspace. `--role viewer` creates a read-only account; `--role admin` is available for local administration. Public signup is disabled. Historical unowned dossiers are not assigned by guessing an owner. Account recovery and ownership migration require an explicit administrative process; no email-recovery service is simulated.
 
-The API uses one process/ingestion worker in Compose. Run `python -m context_app.admin migrate` for an explicit repeatable additive schema setup. Four ordered transactional migrations record the additive schema, indexes, workspace settings and export/batch tables in `cx_schema_migrations`. Existing legacy records are preserved; no automatic downgrade or data deletion runs. `python -m context_app.admin migration-status` prints applied versions. Review database changes and take a backup before migrating an existing database. Startup also ensures the additive tables exist. Automatic destructive migrations are not performed.
+The API uses one process/ingestion worker in Compose. Run `python -m context_app.admin migrate` for an explicit repeatable additive schema setup. Five ordered transactional migrations record the additive schema, indexes, workspace settings, export/batch tables and reviewed-goods provenance in `cx_schema_migrations`. Existing legacy records are preserved; no automatic downgrade or data deletion runs. `python -m context_app.admin migration-status` prints applied versions. Review database changes and take a backup before migrating an existing database. Startup also ensures the additive tables exist. Automatic destructive migrations are not performed.
 
 ## Optional inference
 
@@ -71,3 +71,10 @@ The performed drill restored five dossiers and four migration records into a sep
 ## Local source review package
 
 Run `python scripts/package_project.py` to build `output/release/ClearanceX_Graph_Hacks_Source.zip` from an explicit allowlist. It excludes private environments, PDFs/caches and local backups; selected source is checked for API-key patterns and a SHA-256 manifest is included. Inspect rights and the final archive before publishing. This command does not create a public repository or submit to the competition.
+
+
+## Source-linked goods review
+
+Open declaration readiness and verify each extracted invoice item against its source PDF. HS code, two-letter origin and item weight/package allocations are required. Matching packing rows supply source-linked defaults for review. Review every invoice row; completing processing alone never authorizes export. The app apportions evidenced freight/insurance and reconciles item values and allocation totals before preparation.
+
+Migration 5 preserves old goods rows as unverified and stales older export artifacts. New reviews have a unique current invoice-row identity, source revision and graph dependencies. Repeating the same review is safe; source changes make dependent reviews stale. Existing old extractions are preserved: use a fresh upload for the improved parser rather than overwriting historical evidence.

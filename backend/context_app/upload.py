@@ -61,7 +61,9 @@ def status(dossier_id: str):
         return {"dossier_id": dossier_id, "status": row.status,
             "completed_documents": sum(d.status == "done" for d in docs), "total_documents": len(docs),
             "documents": [{"document_id": str(d.id), "original_name": d.original_name,
-                "document_type": d.document_type, "status": d.status, "error_message": d.error_message} for d in docs]}
+                "document_type": d.document_type, "status": d.status, "error_message": d.error_message,
+                "quality_status": (d.extraction_json or {}).get('quality_status'),
+                "missing_fields": (d.extraction_json or {}).get('missing_fields', [])} for d in docs]}
 
 
 @router.post("/{dossier_id}/retry")

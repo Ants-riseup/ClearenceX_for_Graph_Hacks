@@ -116,10 +116,14 @@ def resolve_documents(shipment_id: str, documents: list[dict[str, Any]], policy=
     for document in documents:
         doc_id = str(document.get("document_id", "unknown"))
         doc_type = str(document.get("document_type", "unknown"))
+        # A draft declaration repeats other sources; it must not corroborate
+        # itself or become an independent commercial-source vote.
+        if doc_type == 'customs_worksheet':
+            continue
         document_label = document.get("source_label") or _display_document_type(doc_type)
         for index, entity in enumerate(document.get("entities", [])):
             entity_type = entity.get("entity_type")
-            if not entity_type or entity_type not in CUSDEC_FIELDS:
+            if not entity_type or entity_type not in CUSDEC_FIELDS or not entity.get('resolver_eligible', True):
                 continue
             # New extractions retain carriers, banks, and other organisations
             # as role-labelled evidence.  They must never be allowed to become

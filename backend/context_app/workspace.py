@@ -133,7 +133,7 @@ class DocumentType(Strict):
 
 @router.post('/shipments/{shipment_id}/documents/{document_id}/type')
 def correct_type(shipment_id: str, document_id: str, payload: DocumentType, request: Request):
-    if payload.document_type not in {'commercial_invoice', 'packing_list', 'awb', 'bl', 'freight_invoice', 'delivery_order'}:
+    if payload.document_type not in {'commercial_invoice', 'packing_list', 'awb', 'bl', 'freight_invoice', 'delivery_order', 'customs_worksheet'}:
         raise HTTPException(422, 'Unsupported document type.')
     with SessionLocal() as db:
         row = authorize_dossier(db, shipment_id, request.state.user, write=True)

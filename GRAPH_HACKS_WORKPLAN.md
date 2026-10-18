@@ -1,5 +1,7 @@
 # ClearanceX — Graph Hacks implementation work plan
 
+**Latest local validation — 18 October 2026:** All nine reported runtime bugs are fixed within the tested four-PDF workflow. The running app passes upload, graph-backed review and per-item XML preparation; 62 selected tests pass with one skipped. See [the verification and working test output](Docs/NINE_FIXES_VERIFICATION.md). The original Overview design is retained. Broader roadmap and submission requirements remain as documented below.
+
 **Prepared:** 17 October 2026, Asia/Colombo
 **Revised:** 17 October 2026 — stronger competition focus, guideline coverage preserved, and a balanced free/paid stack with OpenAI allowed
 **Project:** ClearanceX, Team Ants

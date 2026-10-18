@@ -167,6 +167,11 @@ class CusdecLineItem(Base):
     total_price = Column(Float, nullable=False)
     source_reference = Column(Text, nullable=False)
     verified_by = Column(String(100), nullable=False, default='reviewer')
+    source_document_id = Column(String(64))
+    source_revision = Column(Integer)
+    source_row_id = Column(String(255))
+    validity_state = Column(String(24), nullable=False, default='unverified')
+    details = Column(JSONB, nullable=False, default=dict)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

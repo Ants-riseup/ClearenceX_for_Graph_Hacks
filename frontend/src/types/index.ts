@@ -146,6 +146,13 @@ export interface CusdecReadiness {
 }
 
 export interface CusdecLineItem {
+  id?: string;
+  validity_state?: string;
+  hs_code?: string;
+  origin?: string;
+  gross_weight?: string;
+  net_weight?: string;
+  package_count?: string;
   row_index: number;
   description: string;
   quantity: number;
@@ -161,7 +168,7 @@ export interface CusdecLineItem {
 export interface GraphNode {
   id: string;
   label: string;
-  type: 'shipment' | 'document' | 'canonical_field' | 'source_assertion';
+  type: 'shipment' | 'document' | 'canonical_field' | 'source_assertion' | 'canonicalfield' | 'assertion' | 'decision' | 'memory' | 'reviewtask' | 'ruleevaluation' | 'rule' | 'agentrun' | 'exportsnapshot' | 'goodsreview';
   color: string | { background: string; border: string };
   status?: 'conflict' | 'match' | 'warning' | 'pending';
   document_type?: string;

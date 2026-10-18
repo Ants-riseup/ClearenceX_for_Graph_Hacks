@@ -387,148 +387,14 @@ async def save_field_resolution(shipment_id: str, resolution: dict, request: Req
 
 @router.post("/shipments/{shipment_id}/declaration-metadata")
 async def save_declaration_metadata(shipment_id: str, payload: dict, request: Request):
-    """Save verified Customs/profile fields supplied by the declarant or reviewer."""
-    documents = _get_documents_for_shipment(shipment_id)
-    if not documents:
-        raise HTTPException(status_code=404, detail="No processed documents were found for this dossier.")
-
-    from reasoning.cusdec_readiness import PROFILE_REQUIREMENTS, build_cusdec_readiness
-
-    values = payload.get("values")
-    if not isinstance(values, dict):
-        raise HTTPException(status_code=400, detail="values must be an object of declaration fields.")
-
-    invalid = set(values) - set(PROFILE_REQUIREMENTS)
-    if invalid:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Unsupported declaration field(s): {', '.join(sorted(invalid))}.",
-        )
-
-    cleaned = {
-        key: str(value).strip()
-        for key, value in values.items()
-        if value is not None and str(value).strip()
-    }
-    if not cleaned:
-        raise HTTPException(status_code=400, detail="Enter at least one declaration value to save.")
-    if any(len(value) > 200 for value in cleaned.values()):
-        raise HTTPException(status_code=400, detail="Declaration values must be 200 characters or fewer.")
-
-    try:
-        from database.connection import SessionLocal
-        from database.models import DeclarationMetadata
-
-        db = SessionLocal()
-        try:
-            from context_app.security import authorize_dossier
-            from context_app.service import enqueue
-            import copy
-            context = authorize_dossier(db, shipment_id, request.state.user, write=True, lock=True)
-            for field_name, value in cleaned.items():
-                row = db.query(DeclarationMetadata).filter(
-                    DeclarationMetadata.shipment_id == shipment_id,
-                    DeclarationMetadata.field_name == field_name,
-                ).first()
-                if row is None:
-                    row = DeclarationMetadata(shipment_id=shipment_id, field_name=field_name)
-                    db.add(row)
-                row.value = value
-                row.updated_by = request.state.user["id"]
-            enqueue(db, context, copy.deepcopy(context.state), request.state.user["id"], "declarationmetadata_saved")
-            db.commit()
-        finally:
-            db.close()
-    except Exception as exc:
-        logger.exception("Could not save declaration metadata for %s", shipment_id)
-        raise HTTPException(status_code=503, detail="The declaration details could not be saved.") from exc
-
-    fields = _resolve_shipment_fields(shipment_id, documents)
-    metadata = _get_declaration_metadata(shipment_id)
-    return {
-        "status": "saved",
-        "profile": metadata,
-        "readiness": build_cusdec_readiness(documents, fields, metadata),
-    }
+    from context_app.goods import save_profile
+    return save_profile(shipment_id, payload, request.state.user)
 
 
 @router.post("/shipments/{shipment_id}/cusdec-line-items")
 async def save_cusdec_line_item(shipment_id: str, item: dict, request: Request):
-    """Save one source-referenced goods row when automatic table extraction is unavailable."""
-    documents = _get_documents_for_shipment(shipment_id)
-    if not documents:
-        raise HTTPException(status_code=404, detail="No processed documents were found for this dossier.")
-
-    description = str(item.get("description", "")).strip()
-    unit = str(item.get("unit", "")).strip()
-    source_reference = str(item.get("source_reference", "")).strip()
-    if not description or not unit or not source_reference:
-        raise HTTPException(
-            status_code=400,
-            detail="Description, unit, and source document reference are required.",
-        )
-    if len(description) > 1000 or len(unit) > 50 or len(source_reference) > 500:
-        raise HTTPException(status_code=400, detail="One or more line-item values are too long.")
-    try:
-        quantity = float(item.get("quantity"))
-        unit_price = float(item.get("unit_price"))
-        total_price = float(item.get("total_price"))
-    except (TypeError, ValueError):
-        raise HTTPException(status_code=400, detail="Quantity, unit price, and total price must be numbers.")
-    import math
-    if not all(math.isfinite(v) for v in (quantity, unit_price, total_price)) or quantity <= 0 or unit_price < 0 or total_price <= 0:
-        raise HTTPException(status_code=400, detail="Quantity and total price must be positive; unit price cannot be negative.")
-    from decimal import Decimal, ROUND_HALF_UP
-    expected_total = (Decimal(str(item['quantity'])) * Decimal(str(item['unit_price']))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-    supplied_total = Decimal(str(item['total_price'])).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-    if expected_total != supplied_total:
-        raise HTTPException(status_code=400, detail="Total price must equal quantity × unit price rounded to two decimals (half up).")
-
-    try:
-        from database.connection import SessionLocal
-        from database.models import CusdecLineItem
-
-        db = SessionLocal()
-        try:
-            from context_app.security import authorize_dossier
-            from context_app.service import enqueue
-            import copy
-            context = authorize_dossier(db, shipment_id, request.state.user, write=True, lock=True)
-            last_row = db.query(CusdecLineItem.row_index).filter(
-                CusdecLineItem.shipment_id == shipment_id
-            ).order_by(CusdecLineItem.row_index.desc()).first()
-            row = CusdecLineItem(
-                shipment_id=shipment_id,
-                row_index=(last_row[0] if last_row else 0) + 1,
-                description=description,
-                quantity=quantity,
-                unit=unit,
-                unit_price=unit_price,
-                total_price=total_price,
-                source_reference=source_reference,
-                verified_by=request.state.user["id"],
-            )
-            db.add(row)
-            enqueue(db, context, copy.deepcopy(context.state), request.state.user["id"], "cusdeclineitem_saved")
-            db.commit()
-        finally:
-            db.close()
-    except Exception as exc:
-        logger.exception("Could not save CUSDEC line item for %s", shipment_id)
-        raise HTTPException(status_code=503, detail="The goods line item could not be saved.") from exc
-
-    from reasoning.cusdec_readiness import build_cusdec_readiness
-    fields = _resolve_shipment_fields(shipment_id, documents)
-    return {
-        "status": "saved",
-        "line_items": _get_verified_line_items(shipment_id),
-        "readiness": build_cusdec_readiness(
-            documents,
-            fields,
-            _get_declaration_metadata(shipment_id),
-            _get_verified_line_items(shipment_id),
-        ),
-    }
+    from context_app.goods import save_review
+    return save_review(shipment_id, item, request.state.user)
 
 
 @router.get("/shipments/{shipment_id}/discrepancies")
@@ -647,11 +513,13 @@ async def list_dossiers(request: Request, search: str = "", status: str = "", of
             if not docs:
                 docs = [{'document_id': str(d.id), 'source_filename': d.original_name, 'document_type': d.document_type or 'unknown', 'status': d.status}
                     for d in db.query(DossierDocument).filter_by(dossier_id=uuid.UUID(row.id))]
+            from context_app.exporting import readiness
+            ready = readiness(db, row)
             result.append({"dossier_id": row.id, "title": row.title, "status": actual_status,
                 "created_at": datetime.fromtimestamp(row.created_at, timezone.utc).isoformat(), "document_count": len(docs),
                 "documents": [{"document_id": d["document_id"], "original_name": d.get("source_filename", "document.pdf"),
                     "document_type": d["document_type"], "status": d.get('status', 'done')} for d in docs],
-                'revision': row.revision, 'graph_revision': row.graph_revision})
+                'revision': row.revision, 'graph_revision': row.graph_revision, 'export_allowed': ready['export_allowed'], 'readiness_status': ready['status'], 'blocker_count': ready['blocker_count']})
         return {"dossiers": result, 'total': total, 'offset': offset, 'limit': limit, 'has_more': offset + len(result) < total}
 
 

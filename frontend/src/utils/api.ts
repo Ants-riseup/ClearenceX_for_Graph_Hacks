@@ -68,8 +68,8 @@ export async function getExtraction(id: string): Promise<{ shipment_id: string; 
   const { data } = await api.get(`/shipments/${id}/extraction`);
   return data;
 }
-export async function getGraph(id: string): Promise<GraphData> {
-  const { data } = await api.get<GraphData>(`/shipments/${id}/graph`);
+export async function getGraph(id: string, signal?: AbortSignal): Promise<GraphData> {
+  const { data } = await api.get<GraphData>(`/shipments/${id}/graph`, { signal });
   return data;
 }
 export async function getDiscrepancies(id: string): Promise<{ shipment_id: string; total_discrepancies: number; discrepancies: Discrepancy[] }> {
@@ -80,8 +80,8 @@ export async function getKeyFields(id: string): Promise<KeyFieldResponse> {
   const { data } = await api.get<KeyFieldResponse>(`/shipments/${id}/key-fields`);
   return data;
 }
-export async function getAuditTrail(id: string): Promise<{ shipment_id: string; total_events: number; entries: AuditEntry[] }> {
-  const { data } = await api.get(`/shipments/${id}/audit-trail`);
+export async function getAuditTrail(id: string, signal?: AbortSignal): Promise<{ shipment_id: string; total_events: number; entries: AuditEntry[] }> {
+  const { data } = await api.get(`/shipments/${id}/audit-trail`, { signal });
   return data;
 }
 export async function exportAsycuda(id: string): Promise<Blob> {
@@ -97,14 +97,14 @@ export async function getCusdecReadiness(id: string): Promise<CusdecReadiness> {
   return data;
 }
 export async function saveDeclarationMetadata(id: string, values: Record<string, string>): Promise<CusdecReadiness> {
-  const { data } = await api.post(`/shipments/${id}/declaration-metadata`, { values });
+  const { data } = await api.post(`/shipments/${id}/declaration-metadata`, { values, expected_revision: await waitForSyncedRevision(id) });
   return data.readiness;
 }
 export async function saveCusdecLineItem(
   id: string,
   item: Omit<import('../types').CusdecLineItem, 'row_index'>,
 ): Promise<CusdecReadiness> {
-  const { data } = await api.post(`/shipments/${id}/cusdec-line-items`, item);
+  const { data } = await api.post(`/shipments/${id}/cusdec-line-items`, { ...item, expected_revision: await waitForSyncedRevision(id) });
   return data.readiness;
 }
 export function downloadBlob(blob: Blob, filename: string) {
@@ -115,7 +115,7 @@ export function downloadBlob(blob: Blob, filename: string) {
   a.click(); a.remove();
   window.URL.revokeObjectURL(url);
 }
-export interface DossierSummary { dossier_id: string; title: string; status: string; created_at: string | null; document_count: number; revision: number; graph_revision: number; documents: { document_id: string; original_name: string; document_type: string | null; status: string }[] }
+export interface DossierSummary { export_allowed?: boolean; readiness_status?: string; blocker_count?: number; dossier_id: string; title: string; status: string; created_at: string | null; document_count: number; revision: number; graph_revision: number; documents: { document_id: string; original_name: string; document_type: string | null; status: string }[] }
 export async function listDossiers(params?: { search?: string; status?: string; offset?: number; limit?: number; sort?: string }, signal?: AbortSignal): Promise<{ dossiers: DossierSummary[]; total: number; offset: number; limit: number; has_more: boolean }> {
   const { data } = await api.get('/dossiers', { params, signal });
   return data;
@@ -146,4 +146,14 @@ export async function saveFieldResolution(
     ...resolution, expected_revision: context.source_revision, request_id: crypto.randomUUID(),
   });
   return data;
+}
+
+export async function waitForSyncedRevision(id: string, signal?: AbortSignal): Promise<number> {
+  for (let attempt = 0; attempt < 60; attempt++) {
+    if (signal?.aborted) throw new DOMException('Request cancelled', 'AbortError');
+    const { data } = await api.get(`/shipments/${id}/context-status`, { signal });
+    if (data.status === 'synced') return data.source_revision;
+    await new Promise<void>(resolve => window.setTimeout(resolve, 300));
+  }
+  throw new Error('Graph synchronization is still pending. Retry once the dossier is synced.');
 }

@@ -22,6 +22,8 @@ interface DossierItem {
   status: string;
   created_at: string | null;
   document_count: number;
+  export_allowed?: boolean;
+  readiness_status?: string;
   documents: DossierDoc[];
 }
 
@@ -58,7 +60,7 @@ export function ScreenOverview({ onTriggerToast }: Props) {
   const { setShipmentId } = useShipment();
   const [dossiers, setDossiers] = useState<DossierItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [channelOverrides, setChannelOverrides] = useState<Record<string, string>>({});
+
 
   const heroRef       = useRef<HTMLElement>(null);
   const heroBgRef     = useRef<HTMLImageElement>(null);
@@ -274,18 +276,14 @@ export function ScreenOverview({ onTriggerToast }: Props) {
   };
 
   const getChannel = (d: DossierItem): string => {
-    if (channelOverrides[d.dossier_id]) return channelOverrides[d.dossier_id];
-    return d.status === 'done' ? 'green' : d.status === 'error' ? 'hold' : d.status === 'processing' ? 'review' : 'pending';
+    if (d.export_allowed === true) return 'green';
+    return d.status === 'error' ? 'hold' : ['done', 'processing'].includes(d.status) ? 'review' : 'pending';
   };
 
-  const toggleChannel = (dossierId: string, currentChannel: string) => {
-    const next = currentChannel === 'green' ? 'review' : 'green';
-    setChannelOverrides(prev => ({ ...prev, [dossierId]: next }));
-    onTriggerToast({
-      title: 'Review status updated',
-      message: `Dossier ${dossierId.slice(0, 8)}... is ${next === 'green' ? 'ready' : 'marked for review'}.`,
-      type: next === 'green' ? 'success' : 'info',
-    });
+  const openReadiness = (dossierId: string) => {
+    setShipmentId(dossierId);
+    navigate('/asycuda-gateway');
+    onTriggerToast({ title: 'Declaration readiness', message: 'Review the saved evidence and export blockers.', type: 'info' });
   };
 
   // ── GSAP hover helpers ───────────────────────────────────────────────
@@ -543,13 +541,13 @@ export function ScreenOverview({ onTriggerToast }: Props) {
                           <button
                             onMouseEnter={onBtnEnter}
                             onMouseLeave={onBtnLeave}
-                            onClick={(e) => { onBtnClick(e); toggleChannel(d.dossier_id, channel); }}
+                            onClick={(e) => { onBtnClick(e); openReadiness(d.dossier_id); }}
                             className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold cursor-pointer transition-opacity ${cb.bg} ${cb.text}`}
-                            title="Change review status"
+                            title="Open saved declaration readiness"
                           >
                             <span className={`h-1.5 w-1.5 rounded-full ${cb.dot}`} />
                             {cb.label}
-                            <span className="material-symbols-outlined text-[11px]">swap_horiz</span>
+                            <span className="material-symbols-outlined text-[11px]">open_in_new</span>
                           </button>
                         </td>
 

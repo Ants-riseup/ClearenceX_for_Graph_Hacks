@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { exportAsycuda, downloadBlob, getCusdecReadiness, saveCusdecLineItem, saveDeclarationMetadata } from '../../utils/api';
+import { exportAsycuda, downloadBlob, getCusdecReadiness, apiError, waitForSyncedRevision, saveDeclarationMetadata } from '../../utils/api';
 import { useShipment } from '../../hooks/useShipment';
+import { GoodsReviewPanel } from '../review/GoodsReviewPanel';
 import type { CusdecReadiness } from '../../types';
 
 interface Props {
@@ -33,8 +34,6 @@ export function ScreenAsycudaGateway({ onTriggerToast }: Props) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isSavingDetails, setIsSavingDetails] = useState(false);
   const [details, setDetails] = useState<Record<string, string>>({});
-  const [isSavingLineItem, setIsSavingLineItem] = useState(false);
-  const [lineItem, setLineItem] = useState({ description: '', quantity: '', unit: '', unit_price: '', total_price: '', source_reference: '' });
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const refreshReadiness = useCallback(async () => {
@@ -85,45 +84,19 @@ export function ScreenAsycudaGateway({ onTriggerToast }: Props) {
       const nextReadiness = await saveDeclarationMetadata(activeId, values);
       setReadiness(nextReadiness);
       setDetails(nextReadiness.profile ?? values);
+      await waitForSyncedRevision(activeId);
+      setReadiness(await getCusdecReadiness(activeId));
       onTriggerToast({ title: 'Declaration details saved', message: 'The CUSDEC readiness checks have been updated.', type: 'success' });
-    } catch {
-      onTriggerToast({ title: 'Could not save declaration details', message: 'Check the verified values and try again.', type: 'error' });
+    } catch (err) {
+      onTriggerToast({ title: 'Could not save declaration details', message: apiError(err), type: 'error' });
     } finally {
       setIsSavingDetails(false);
     }
   };
 
-  const handleSaveLineItem = async () => {
-    const quantity = Number(lineItem.quantity);
-    const unitPrice = Number(lineItem.unit_price);
-    const totalPrice = Number(lineItem.total_price);
-    if (!lineItem.description.trim() || !lineItem.unit.trim() || !lineItem.source_reference.trim() || !quantity || totalPrice <= 0 || unitPrice < 0) {
-      onTriggerToast({ title: 'Complete the goods item', message: 'Add the description, quantity, unit, prices, and a document reference.', type: 'info' });
-      return;
-    }
-    setIsSavingLineItem(true);
-    try {
-      const nextReadiness = await saveCusdecLineItem(activeId, {
-        description: lineItem.description.trim(),
-        quantity,
-        unit: lineItem.unit.trim(),
-        unit_price: unitPrice,
-        total_price: totalPrice,
-        source_reference: lineItem.source_reference.trim(),
-      });
-      setReadiness(nextReadiness);
-      setLineItem({ description: '', quantity: '', unit: '', unit_price: '', total_price: '', source_reference: '' });
-      onTriggerToast({ title: 'Goods item saved', message: 'The line-item readiness check has been updated.', type: 'success' });
-    } catch {
-      onTriggerToast({ title: 'Could not save goods item', message: 'Check that the total is consistent with quantity × unit price.', type: 'error' });
-    } finally {
-      setIsSavingLineItem(false);
-    }
-  };
 
   const isReady = readiness?.export_allowed === true;
-  const visibleBlockers = readiness?.blockers.slice(0, 8) ?? [];
-
+  const visibleBlockers = readiness?.blockers ?? [];
   return (
     <div className="w-full max-w-5xl mx-auto px-4 sm:px-8 py-8 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -213,34 +186,7 @@ export function ScreenAsycudaGateway({ onTriggerToast }: Props) {
         </div>
       )}
 
-      {!loadError && (
-        <section className="rounded-xl border border-outline-variant/30 bg-surface-container-lowest shadow-sm overflow-hidden">
-          <div className="p-5 border-b border-outline-variant/20">
-            <p className="text-xs font-semibold text-primary uppercase tracking-wide">Goods line items</p>
-            <h2 className="text-lg font-bold text-on-surface mt-1">Add an item from the invoice or packing list</h2>
-            <p className="text-sm text-on-surface-variant mt-1">Use the values shown in the source document and record where you verified them. This is used only when automatic table extraction has not produced a usable row.</p>
-          </div>
-          <div className="p-5">
-            {readiness?.line_items?.length ? (
-              <div className="mb-5 overflow-x-auto rounded-lg border border-outline-variant/20">
-                <table className="w-full min-w-[700px] text-left text-xs">
-                  <thead className="bg-surface-container-low text-outline"><tr><th className="px-3 py-2">Description</th><th className="px-3 py-2">Qty</th><th className="px-3 py-2">Unit price</th><th className="px-3 py-2">Total</th><th className="px-3 py-2">Source</th></tr></thead>
-                  <tbody>{readiness.line_items.map((item) => <tr key={item.row_index} className="border-t border-outline-variant/20 text-on-surface"><td className="px-3 py-2">{item.description}</td><td className="px-3 py-2">{item.quantity} {item.unit}</td><td className="px-3 py-2">{item.unit_price}</td><td className="px-3 py-2">{item.total_price}</td><td className="px-3 py-2">{item.source_reference}</td></tr>)}</tbody>
-                </table>
-              </div>
-            ) : null}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <label className="block md:col-span-2"><span className="text-sm font-semibold text-on-surface">Goods description</span><input value={lineItem.description} onChange={(event) => setLineItem((current) => ({ ...current, description: event.target.value }))} className="mt-1.5 w-full rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm" /></label>
-              <label className="block"><span className="text-sm font-semibold text-on-surface">Quantity</span><input type="number" min="0" step="any" value={lineItem.quantity} onChange={(event) => setLineItem((current) => ({ ...current, quantity: event.target.value }))} className="mt-1.5 w-full rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm" /></label>
-              <label className="block"><span className="text-sm font-semibold text-on-surface">Unit</span><input value={lineItem.unit} onChange={(event) => setLineItem((current) => ({ ...current, unit: event.target.value }))} className="mt-1.5 w-full rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm" /></label>
-              <label className="block"><span className="text-sm font-semibold text-on-surface">Unit price</span><input type="number" min="0" step="any" value={lineItem.unit_price} onChange={(event) => setLineItem((current) => ({ ...current, unit_price: event.target.value }))} className="mt-1.5 w-full rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm" /></label>
-              <label className="block"><span className="text-sm font-semibold text-on-surface">Line total</span><input type="number" min="0" step="any" value={lineItem.total_price} onChange={(event) => setLineItem((current) => ({ ...current, total_price: event.target.value }))} className="mt-1.5 w-full rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm" /></label>
-              <label className="block md:col-span-2"><span className="text-sm font-semibold text-on-surface">Source document reference</span><input placeholder="e.g. Commercial Invoice INV-100, page 1, row 3" value={lineItem.source_reference} onChange={(event) => setLineItem((current) => ({ ...current, source_reference: event.target.value }))} className="mt-1.5 w-full rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm" /></label>
-            </div>
-            <div className="mt-5 flex justify-end"><button onClick={() => void handleSaveLineItem()} disabled={isSavingLineItem || isLoading} className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold disabled:opacity-45">{isSavingLineItem ? 'Saving…' : 'Save goods item'}</button></div>
-          </div>
-        </section>
-      )}
+      {!loadError && activeId && <GoodsReviewPanel key={activeId} id={activeId} onChange={setReadiness} />}
 
       {!loadError && (
         <section className="rounded-xl border border-outline-variant/30 bg-surface-container-lowest shadow-sm overflow-hidden">

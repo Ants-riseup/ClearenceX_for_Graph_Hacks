@@ -6,6 +6,7 @@ import { ShipmentProvider, useShipment } from './hooks/useShipment';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
 import { ToastNotification } from './components/layout/ToastNotification';
+import { ScreenBoundary } from './components/layout/ScreenBoundary';
 
 import { ScreenOverview } from './components/screens/ScreenOverview';
 import { ScreenDossiers } from './components/screens/ScreenDossiers';
@@ -45,7 +46,7 @@ function AppInner() {
     <div className="min-h-screen flex flex-col bg-background font-sans text-on-surface antialiased">
       <Header />
       <main className={`w-full flex-1 flex flex-col ${ isOverview ? '' : 'pt-20' }`}>
-          <Routes>
+          <ScreenBoundary key={location.pathname}><Routes>
             <Route path="/" element={<ScreenOverview onTriggerToast={showToast} />} />
             <Route path="/dossiers" element={<ScreenDossiers onTriggerToast={showToast} />} />
             <Route path="/context-agent" element={<ScreenContextAgent key={shipmentId ?? 'empty'} />} />
@@ -60,7 +61,7 @@ function AppInner() {
             <Route path="/auth/signin" element={<ScreenSignIn onTriggerToast={showToast} />} />
             <Route path="/auth/signup" element={<ScreenSignUp onTriggerToast={showToast} />} />
             <Route path="/auth/recovery" element={<ScreenRecovery onTriggerToast={showToast} />} />
-          </Routes>
+          </Routes></ScreenBoundary>
         </main>
         <Footer />
         <ToastNotification toast={toast} onClose={() => setToast(null)} />

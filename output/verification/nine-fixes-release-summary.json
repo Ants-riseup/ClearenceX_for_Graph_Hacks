@@ -1,0 +1,35 @@
+{
+  "date": "2026-10-18",
+  "reported_findings_resolved": [
+    "R01",
+    "R02",
+    "R03",
+    "R04",
+    "R05",
+    "R06",
+    "R07",
+    "R08",
+    "R09"
+  ],
+  "selected_suite": {
+    "passed": 62,
+    "skipped": 1,
+    "warnings": 1,
+    "seconds": 98.54
+  },
+  "focused_followup": {
+    "passed": 1,
+    "seconds": 7.65
+  },
+  "production_build": "passed",
+  "lint": "passed with warnings",
+  "schema_migrations": 5,
+  "actual_packaged_four_pdf_flow": "passed",
+  "browser_visual_verification": false,
+  "paid_model_calls": 0,
+  "whole_broad_workplan_complete": false,
+  "output_xml": "output/release/TEST_ONLY_Validated_Four_PDF_Example.xml",
+  "restart_persistence": "passed",
+  "fresh_source_frontend_build": "passed",
+  "fresh_source_backend_imports": "passed"
+}
