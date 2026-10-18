@@ -157,10 +157,26 @@ docker compose --env-file .env.graphhacks exec api \
 
 | Field | Value |
 |---|---|
-| **URL** | http://localhost:8080 |
+| **Local URL** | http://localhost:8080 |
+| **Live URL** | https://clearencexforgraphhacks.vercel.app |
 | **Email** | `operator@example.com` |
 | **Password** | *(printed by Step 1 — save it)* |
 | **Role** | Platform admin |
+
+---
+
+### 🧪 Demo / Test Credentials
+
+> ⚠️ **For testing and demo purposes only.** Do not use in production.
+
+| Field | Value |
+|---|---|
+| **Live URL** | https://clearencexforgraphhacks.vercel.app |
+| **Email** | `reviewer@clearancex.local` |
+| **Password** | `testuser@123` |
+| **Role** | Reviewer (read-only demo access) |
+
+> 📁 **Test files** are located in [`Docs/TEST FILE`](./Docs/TEST%20FILE)
 
 Admin dashboard capabilities:
 - ➕ **Add customer user** — company name, email, auto-generated password

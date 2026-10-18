@@ -90,8 +90,16 @@ class GraphRepository:
             node("Document", doc["document_id"], payload)
             edge(sid, doc["document_id"], "HAS_DOCUMENT")
         assertion_lookup = {a['assertion_id']: a for a in all_assertions(state, sid)}
+        latest_replaced_sources = {}
+        historical_fields = {}
+        for assertion in assertion_lookup.values():
+            historical_fields.setdefault(assertion['document_id'], set()).add(assertion['canonical_field_id'])
+        for document in state.get('archived_documents', []):
+            for field_id in historical_fields.get(document['document_id'], set()):
+                latest_replaced_sources[field_id] = document['document_id']
         for field in fields(state, sid):
             payload = {k: v for k, v in field.items() if k != 'assertions'}
+            payload['latest_replaced_source_document_id'] = latest_replaced_sources.get(field['canonical_field_id'])
             payload['stale_decisions'] = [{'id': d['id'], 'validity_state': d['validity_state'],
                 'source_document_id': assertion_lookup.get(d['assertion_id'], {}).get('document_id'), 'reason': d['reason']}
                 for d in state.get('decisions', []) if d['field_id'] == field['canonical_field_id'] and d['validity_state'] == 'stale']

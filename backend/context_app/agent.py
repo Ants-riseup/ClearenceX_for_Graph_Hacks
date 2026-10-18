@@ -11,6 +11,13 @@ from .models import AgentRun, ContextDossier
 from .graph import fields
 from .budget import reserve, reconcile
 from .service import graph_tool, propose, enqueue
+from .impact import impact_envelope
+
+
+class ChangeImpact(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    source_document_id: str = Field(min_length=1, max_length=255)
+    affected_decision_ids: list[str] = Field(max_length=100)
 
 
 class FinalAnswer(BaseModel):
@@ -18,6 +25,7 @@ class FinalAnswer(BaseModel):
     answer: str = Field(min_length=1, max_length=2000)
     cited_assertion_ids: list[str] = Field(max_length=50)
     uncertainties: list[str] = Field(max_length=10)
+    change_impacts: list[ChangeImpact] = Field(default_factory=list, max_length=6)
 
 
 def tool(name, description, properties):
@@ -41,7 +49,9 @@ Use the graph tools to investigate this one authorized dossier. Do not invent va
 Always retrieve current evidence before proposing a review. Previously approved memory is background, not proof of a current value.
 When evidence changed, explain the uncertainty and propose re-review. You can never approve, export, execute code, fetch URLs or select another tenant.
 When a field lists stale_decisions, use get_change_impact with its source_document_id. Affected historical decisions remain affected even though they are no longer current. Cite current evidence for current values; do not portray a stale approval as current.
-After proposing a task, return the final response. Your final response must be JSON with answer, cited_assertion_ids, uncertainties.
+For the latest correction, use latest_replaced_source_document_id when provided. Never infer the latest source from the order of stale_decisions. If the requested source is ambiguous, state the uncertainty.
+Each get_change_impact response is scoped to ONE exact source_document_id. Never union its decisions with older corrections, unrelated fields or the full stale_decisions history. Report every retrieved source separately in change_impacts, copying exactly its affected_decision_ids. Without a retrieved impact result, return change_impacts as an empty list.
+After proposing a task, return the final response. Your final response must be JSON with answer, cited_assertion_ids, uncertainties, change_impacts.
 Include only source IDs retrieved in this run, cite all material facts, and abstain when evidence is missing.
 Before mentioning a number, retrieve the field evidence supporting it. Do not put UUIDs or revision numbers in the answer prose; source IDs belong in cited_assertion_ids. If a secondary field was not retrieved, describe its review status without inventing or repeating its numeric value.
 Use at most six tools. Do not write hidden chain-of-thought; give a short evidence-based conclusion."""
@@ -68,11 +78,21 @@ def execute_tool(name, args, sid, user, revision, retrieved, run_id):
     result = graph_tool(sid, user, name, expected=revision, **args)
     if name == "get_field_evidence":
         retrieved.update({a["assertion_id"]: a for a in result})
+    if name == 'get_change_impact':
+        return impact_envelope(args['document_id'], revision, result)
     return result
 
 
-def validate_answer(raw, retrieved):
+def validate_answer(raw, retrieved, impacts=None):
     result = FinalAnswer.model_validate_json(raw)
+    expected = impacts or {}
+    reported = {}
+    for impact in result.change_impacts:
+        if impact.source_document_id in reported or len(impact.affected_decision_ids) != len(set(impact.affected_decision_ids)):
+            raise ValueError('Change impact contains duplicate source or decision entries.')
+        reported[impact.source_document_id] = set(impact.affected_decision_ids)
+    if set(reported) != set(expected) or any(reported[source] != set(value['affected_decision_ids']) for source, value in expected.items()):
+        raise ValueError('Change impact must match the graph result for each exact source revision.')
     if not set(result.cited_assertion_ids).issubset(retrieved):
         raise ValueError("Answer cites sources not retrieved in this investigation.")
     if retrieved and not result.cited_assertion_ids:
@@ -91,7 +111,7 @@ def run_agent(run_id, user, client=None):
     with SessionLocal() as db:
         run = db.get(AgentRun, run_id)
         sid, revision, question = run.dossier_id, run.revision, run.question
-    trace, retrieved, usage, proposed, started = [], {}, {"input_tokens": 0, "output_tokens": 0, "estimated_usd": 0.0}, None, time.monotonic()
+    trace, retrieved, impacts, usage, proposed, started = [], {}, {}, {"input_tokens": 0, "output_tokens": 0, "estimated_usd": 0.0}, None, time.monotonic()
     model = os.getenv("OPENAI_AGENT_MODEL", "")
     messages = [{"role": "system", "content": SYSTEM}, {"role": "user", "content": question}]
     status, result = "failed", {}
@@ -111,10 +131,21 @@ def run_agent(run_id, user, client=None):
             if not tool_allowed:
                 grounding = [{'assertion_id': aid, 'field_id': item['canonical_field_id'], 'raw_value': item['raw_value'], 'normalized_value': item['normalized_value']}
                     for aid, item in retrieved.items()]
-                messages.append({'role': 'user', 'content': 'Final grounding envelope: ' + json.dumps(grounding) + '. Cite only these assertion IDs. Mention only numeric values supported here. Describe other fields by status without repeating their numbers.'})
+                messages.append({'role': 'user', 'content': 'Final grounding envelope: ' + json.dumps(grounding) + '. Exact graph impact results: ' + json.dumps(list(impacts.values())) + '. Cite only these assertion IDs. Copy each source impact separately. Mention only numeric values supported here. Describe other fields by status without repeating their numbers.'})
             payload = {"model": model, "messages": messages, "max_completion_tokens": 600,
                 "tools": TOOLS, "tool_choice": "auto" if tool_allowed else "none", "parallel_tool_calls": False}
             schema = FinalAnswer.model_json_schema()
+            schema['required'] = list(schema['properties'])
+            if impacts:
+                impact_schema = schema['$defs']['ChangeImpact']['properties']
+                impact_schema['source_document_id']['enum'] = list(impacts)
+                decisions = sorted({decision for impact in impacts.values() for decision in impact['affected_decision_ids']})
+                if decisions:
+                    impact_schema['affected_decision_ids']['items']['enum'] = decisions
+                else:
+                    impact_schema['affected_decision_ids']['maxItems'] = 0
+            else:
+                schema['properties']['change_impacts']['maxItems'] = 0
             if retrieved:
                 schema['properties']['cited_assertion_ids']['items'] = {'type': 'string', 'enum': list(retrieved)}
             else:
@@ -142,13 +173,13 @@ def run_agent(run_id, user, client=None):
                 if not trace:
                     raise ValueError("No graph investigation was performed; answer was not accepted.")
                 try:
-                    result = validate_answer(message.content or "", retrieved)
+                    result = validate_answer(message.content or "", retrieved, impacts)
                 except ValueError:
                     if repair_attempted:
                         raise
                     repair_attempted = True
                     messages.append({'role': 'assistant', 'content': (message.content or '')[:4000]})
-                    messages.append({'role': 'user', 'content': 'The final answer failed evidence/schema validation. Return a corrected JSON answer using only source IDs already retrieved. Every number in answer prose must appear in a cited assertion. Omit unsupported secondary numbers, IDs and revision counts; describe those statuses in words. Do not call tools or repeat a proposal.'})
+                    messages.append({'role': 'user', 'content': 'The final answer failed evidence/schema validation. Return a corrected JSON answer using only source IDs already retrieved. Every number in answer prose must appear in a cited assertion. Omit unsupported secondary numbers, IDs and revision counts; describe those statuses in words. Copy exact per-source change_impacts from the graph results; never combine older corrections. Do not call tools or repeat a proposal.'})
                     continue
                 with SessionLocal() as db:
                     current = db.get(ContextDossier, sid)
@@ -163,6 +194,8 @@ def run_agent(run_id, user, client=None):
             call = calls[0]
             args = json.loads(call.function.arguments)
             value = execute_tool(call.function.name, args, sid, user, revision, retrieved, run_id)
+            if call.function.name == 'get_change_impact':
+                impacts[args['document_id']] = value
             trace.append({"tool": call.function.name, "arguments": args, "result": value})
             if call.function.name == "propose_review_task":
                 proposed = value
