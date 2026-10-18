@@ -4,7 +4,8 @@
   "outputDirectory": "frontend/dist",
   "installCommand": "npm --prefix frontend ci",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "/api/unavailable" },
+    { "source": "/api/:path*", "destination": "https://clearancex-api.onrender.com/api/:path*" },
+    { "source": "/health/ready", "destination": "https://clearancex-api.onrender.com/health/ready" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
