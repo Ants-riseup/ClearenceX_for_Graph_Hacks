@@ -11,7 +11,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4.1--mini-412991?style=for-the-badge&logo=openai&logoColor=white)](https://platform.openai.com)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://docs.docker.com/compose/)
-[![License](https://img.shields.io/badge/License-LGPL--3.0-green?style=for-the-badge)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache--2.0-green?style=for-the-badge)](LICENSE)
 
 ---
 
@@ -95,17 +95,17 @@ Air Waybill 440 kg  ←──────────┘                    │
 
 ## 🔐 Demo Login Credentials
 
-> **Sign in immediately** — no CLI commands needed for the demo account.
+> A fresh installation has **no shared default account**. Create a private demo login with the command below, then sign in using its generated password.
 
-### ✨ Ready-to-Use Demo Account
+### ✨ Your Private Demo Workspace
 
-After the stack is running at **http://localhost:8080**, use these credentials:
+After starting the stack and creating the demo account below, open **http://localhost:8080**:
 
 <table>
 <tr><td><b>🌐 URL</b></td><td><code>http://localhost:8080</code></td></tr>
-<tr><td><b>📧 Email</b></td><td><code>reviewer@clearancex.local</code></td></tr>
-<tr><td><b>🔑 Password</b></td><td><code>user@123</code></td></tr>
-<tr><td><b>👤 Role</b></td><td>Reviewer (User)</td></tr>
+<tr><td><b>📧 Email</b></td><td><code>judge@example.test</code></td></tr>
+<tr><td><b>🔑 Password</b></td><td>Generated privately by the setup command</td></tr>
+<tr><td><b>👤 Role</b></td><td>User</td></tr>
 </table>
 
 **After signing in:**

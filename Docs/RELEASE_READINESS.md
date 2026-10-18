@@ -19,7 +19,7 @@ Updated 18 October 2026, Asia/Colombo. This is a local release record, not a sub
 
 | Gate | Status |
 |---|---|
-| Current reviewed source publicly available and links verified signed out | Not established; local packaging/versioning does not prove publication |
+| Public repository | Public repository confirmed through an unauthenticated GitHub page; the final remediation commit must also be verified after publishing |
 | Actual working demo video | Pending human recording; use DEMO.md |
 | Full visual/keyboard/mobile walkthrough | Pending; browser security layer denied automation |
 | Registration, actual team and submitted tracks | Team confirmation required; documentation explicitly focuses Track 01 |
@@ -30,3 +30,5 @@ Updated 18 October 2026, Asia/Colombo. This is a local release record, not a sub
 Do not publish the existing Git history without checking it: supplied PDFs and environment files were previously tracked. The reviewed source archive provides a clean current-source boundary without those files, but does not erase older history. Replace any exposed provider credentials before sharing/deployment.
 
 The first-run comparison still has a repeated-correction reasoning failure; deterministic graph state/impact remains tested. It would be misleading to label this release 10/10 or the whole roadmap complete. General OCR, official customs validation and later memory/Company Brain/production features retain their documented scope.
+
+Final documentation corrections remove a misleading pre-seeded demo login and match the license badge to the actual Apache-2.0 LICENSE. Fresh installations generate private credentials instead.
