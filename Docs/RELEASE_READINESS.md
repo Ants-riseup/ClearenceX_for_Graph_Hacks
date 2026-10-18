@@ -12,6 +12,8 @@ Updated 18 October 2026, Asia/Colombo. This is a local release record, not a sub
 - Fresh selected backend suite: **79 passed, 1 skipped**, one existing Starlette/httpx deprecation warning, 145.33 seconds. The skip is the Windows stdio case; retained packaged Linux MCP evidence is separate.
 - Fresh frontend suite: **29 passed**. TypeScript/Vite production build passes; no main-chunk size warning. Lint has no errors and nine existing React warnings.
 - Source packaging explicitly includes the new company backend, admin page, tests, evaluator, workflow and submission documentation. It excludes private configuration, credentials, PDFs, caches and backups and verifies archived SHA-256 hashes.
+- A freshly extracted source tree passed dependency installation, **27 focused backend tests**, **29 component tests** and a production build on this host. Backend checks used the existing isolated dependency runtime; this is not an independent machine. A component test initially exceeded its five-second timeout while tests/build/backend checks ran concurrently; a sequential rerun passed all 29. The initial timeout is not hidden or counted as a pass.
+- The current Git tip now tracks the company backend, admin screen, tests, evaluator and workflow. Private environment files and the four supplied PDFs were removed from current version tracking while preserved locally. Older Git history was retained and still needs publication/privacy review.
 
 ## Final external/human gates
 

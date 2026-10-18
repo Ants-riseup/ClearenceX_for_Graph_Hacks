@@ -1,0 +1,22 @@
+{
+  "date": "2026-10-18",
+  "scope": "Current source, isolated regression tests and extracted release source; no browser acceptance or external publication",
+  "backend": {"passed": 79, "skipped": 1, "seconds": 145.33, "warning": "Existing Starlette/httpx deprecation"},
+  "frontend": {"passed": 29},
+  "build": "passed",
+  "lint": {"errors": 0, "existing_warnings": 9},
+  "acceptance_model_comparison": {"graph": "19/20", "flat": "13/20", "estimated_usd": 0.0455048, "evidence": "acceptance-v1.json", "independent_third_party": false, "failure_retained": "Repeated-correction impact question"},
+  "extracted_source_check": {
+    "frontend_dependency_install": "passed",
+    "frontend_build": "passed",
+    "backend_focused_passed": 27,
+    "frontend_passed_on_sequential_rerun": 29,
+    "initial_parallel_frontend_run": "One five-second timeout under simultaneous backend/build load; not counted as a successful run",
+    "boundary": "Same host; backend uses existing isolated Python dependencies. Not an independent clean-machine or published-checkout check."
+  },
+  "private_files_preserved_locally": true,
+  "public_repository_updated": false,
+  "video_recorded": false,
+  "browser_acceptance_completed": false,
+  "competition_submission_completed": false
+}

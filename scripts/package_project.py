@@ -8,7 +8,7 @@ import zipfile
 root = Path(__file__).resolve().parents[1]
 folders = ['.github/workflows', 'backend/context_app', 'backend/database', 'backend/migrations', 'backend/reasoning', 'backend/ai_pipeline',
     'backend/evaluation', 'backend/tests', 'backend/api', 'frontend/src', 'frontend/public', 'frontend/tests', 'scripts']
-names = ['README.md', 'GRAPH_HACKS_WORKPLAN.md', 'compose.yaml', '.env.graphhacks.example', '.gitignore',
+names = ['README.md', 'LICENSE', 'GRAPH_HACKS_WORKPLAN.md', 'compose.yaml', '.env.graphhacks.example', '.gitignore',
     'package.json', 'package-lock.json', 'backend/main.py', 'backend/xai_types.py', 'backend/Dockerfile', 'backend/.dockerignore',
     'backend/requirements.txt', 'backend/requirements-core.txt', 'backend/requirements-ocr.txt', 'backend/requirements-mcp.txt', 'backend/requirements-test.txt',
     'frontend/package.json', 'frontend/package-lock.json', 'frontend/index.html', 'frontend/Dockerfile', 'frontend/.dockerignore', 'frontend/nginx.conf',

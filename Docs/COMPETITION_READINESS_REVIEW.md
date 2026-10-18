@@ -2,6 +2,8 @@
 
 Reviewed 18 October 2026, Asia/Colombo.
 
+**Subsequent remediation:** The README, judge/submission/demo materials, CI workflow and release packaging have been improved. New first-run acceptance results are **19/20 graph versus 13/20 flat**; fresh regression results are **79 backend passed/1 skipped and 29 UI passed**. Current source tracking includes the previously missing files. See [RELEASE_READINESS.md](RELEASE_READINESS.md) for current status; the original assessment below is retained as a before-remediation review. External publication, real recording/visual acceptance, eligibility and submission remain unconfirmed.
+
 **Verdict: not 10/10 yet. My assessment is 8/10 for technical fit and about 6/10 for demonstrated submission readiness.** These are qualitative reviewer estimates, not official judging scores, weighted rubric results or a prediction of winning.
 
 ## Scope and evidence

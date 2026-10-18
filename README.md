@@ -342,9 +342,11 @@ OPENAI_AGENT_MODEL=gpt-4.1-mini-2025-04-14
 
 ## 📊 Evaluation Results
 
-### Post-Development Acceptance Set (held-out, first run only)
+### Post-Development Acceptance Set (frozen first run)
 
 > 10 dossiers · 20 questions · same model · graph vs flat · frozen before execution
+
+Same-team authored after earlier development; not independent third-party validation. It was not used to tune the application/model prompt after viewing these outcomes. Since execution, it is regression data, not an unseen test set.
 
 | Metric | 🕸️ Graph | 📄 Flat |
 |---|---:|---:|
