@@ -6,6 +6,7 @@
   "rewrites": [
     { "source": "/api/:path*", "destination": "https://clearancex-api.onrender.com/api/:path*" },
     { "source": "/health/ready", "destination": "https://clearancex-api.onrender.com/health/ready" },
+    { "source": "/blog/clearancex-falkordb", "destination": "/blog/clearancex-falkordb.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
