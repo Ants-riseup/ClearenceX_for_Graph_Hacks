@@ -17,6 +17,8 @@
 
 **Graph Hacks 2026 · Track 01 — Agents That Act on Connected Data**
 
+**[Open the hosted app](https://clearencexforgraphhacks.vercel.app/)** · Company access is provided by the administrator. [Hosting status and free-plan limits](Docs/HOSTING_STATUS.md).
+
 > ClearanceX connects shipment documents, reviewer decisions and graph dependencies in **FalkorDB**.
 > An AI agent investigates conflicting values, proposes cited review tasks, and tracks which decisions
 > become stale when evidence changes — while preserving every decision that doesn't.

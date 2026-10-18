@@ -14,6 +14,12 @@ Export teams reconcile invoices, packing lists and transport documents. A change
 
 ## Implementation and graph contribution
 
+### Copy-ready answer: How did you use FalkorDB?
+
+FalkorDB is ClearanceX's connected context and dependency engine. We model shipments, document revisions, extracted assertions, review decisions, tasks, approved memory and export snapshots as nodes linked by evidence and dependency relationships. Tenant-scoped, parameterized Cypher retrieves current evidence and traverses dependencies across multiple hops. A bounded AI agent selects graph tools, explains conflicting values with source citations and proposes a review task; it cannot approve its own answer.
+
+Our key use case is selective invalidation: correcting a packing list makes the weight approval that depended on it stale, while an unrelated invoice package-count approval remains current. The graph also excludes stale approved memory from later sessions. PostgreSQL retains authoritative records and a durable projection outbox; missing or unsynchronized FalkorDB context blocks graph-dependent actions rather than falling back to invented answers. An authenticated MCP adapter exposes the narrow tools. In a frozen, same-team synthetic acceptance comparison, graph context scored 19/20 safe outcomes versus 13/20 for flat context, with one repeated-correction reasoning failure retained and disclosed.
+
 FastAPI stores source history, reviews and a durable outbox in PostgreSQL. A worker projects tenant-isolated, versioned FalkorDB snapshots. A bounded agent chooses typed tools for issues, evidence, rules, approved memory, change impact and pending proposals. People approve; the agent cannot do so. Source correction triggers multi-hop dependency traversal and selective invalidation.
 
 Graph evidence gates proposals/approvals. Missing graph context does not fall back to an equivalent SQL answer. The demo shows weight approval becoming stale while unrelated invoice package approval stays current. Essential queries are in `backend/context_app/queries/`.
@@ -31,7 +37,7 @@ Earlier ClearanceX UI/domain infrastructure is retained. The graph context, depe
 - Configured repository: `https://github.com/Ants-riseup/ClearenceX_for_Graph_Hacks` — verify the final public commit and signed-out access.
 - Setup/model/queries: README and `Docs/GRAPH_MODEL.md`.
 - Working video: **not recorded; supply the actual video URL**.
-- Deployment: complete local Docker instructions supplied; no public deployment claimed.
+- Deployment: https://clearencexforgraphhacks.vercel.app/ — invitation-only customer workspaces. PostgreSQL, FalkorDB and the API are hosted; readiness and administrator sign-in were verified. Arrange a customer account for judges and retain the complete local Docker setup. See `Docs/HOSTING_STATUS.md` for free-tier limits and verification scope.
 - Registration, team, reuse eligibility and data/asset rights: **team verification required**.
 
 This prepared text is not a completed official submission. Check the live form's field limits and required links.

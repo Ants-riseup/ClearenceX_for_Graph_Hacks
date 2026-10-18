@@ -1,60 +1,82 @@
-# Hosting status
+# ClearanceX hosting status
 
-Updated 18 October 2026.
+Updated 18 October 2026 (Asia/Colombo).
 
-Frontend: https://clearencexforgraphhacks.vercel.app/
+## Live addresses
 
-Vercel team: Nadija (Hobby). Project: `clearencex_for_graph_hacks`.
-Git integration deploys `main`. The initial build failed because root installation
-did not install frontend dependencies. The corrected installation and output paths
-produced a Ready production deployment at commit `2f3d35b`.
+- Application: https://clearencexforgraphhacks.vercel.app/
+- Sign-in: https://clearencexforgraphhacks.vercel.app/auth/signin
+- Administration: https://clearencexforgraphhacks.vercel.app/admin/companies
+- Readiness: https://clearencexforgraphhacks.vercel.app/health/ready
+- API: https://clearancex-api.onrender.com
 
-## Full application status
+Company access is by invitation. The initial administrator uses
+`admin@clearancex.local` and the password the owner entered privately in Render.
+No shared administrator password is published. Judges need a customer account;
+platform administration does not grant access to customer shipment documents.
 
-**Partial deployment.** PostgreSQL 16 is available on Render Free, with external
-internet connections blocked. It expires on **17 November 2026**. The FalkorDB Free
-instance `instance-c3n0ad6hy` is provisioning; its last observed state was
-Deploying / Unhealthy. The API deployment form is prepared but not submitted.
-Hosted login and shipment processing
-are unavailable. API requests deliberately return 503 until a real backend is
-connected; they must not receive the frontend HTML as a successful response.
+## Deployment
 
-No paid plans have been enabled. Laptop databases and private environment files
-are not uploaded. Local accounts are not automatically copied into cloud hosting.
+- Vercel: Nadija Hobby / `clearencex_for_graph_hacks`, Git deployment from `main`.
+- Render: separate ClearanceX project, `clearancex-api`, Docker Free, Oregon.
+- PostgreSQL: Render Free, PostgreSQL 16, `clearancex-db`, private-network access.
+  External internet connections are blocked. **Expires 17 November 2026.**
+- FalkorDB Cloud: Free instance `instance-c3n0ad6hy`, AWS ap-south-1,
+  observed Running / Healthy. Named database-user authentication is configured.
+- Private PDF originals: PostgreSQL (`PDF_STORAGE=postgres`); local files are an
+  extraction cache. Defaults: 100 MB per tenant, 500 MB overall.
+- Backend startup: `python -m context_app.cloud_start`, one API worker with the
+  ingestion and projection loops. Readiness checks PostgreSQL and FalkorDB.
+- Browser requests to `/api/` are forwarded over HTTPS through Vercel to Render,
+  preserving same-origin cookies. The temporary unavailable API was removed.
 
-## Required remaining work
+Initial administrator setup only creates an account in an empty database and
+never resets an existing account. Temporary bootstrap variables are removed after
+successful sign-in. Customer onboarding retains its first-login password-change
+requirement. Local accounts and private environment files were not uploaded.
 
-1. Sign in to the chosen backend/database providers and select free plans.
-2. Wait for the FalkorDB instance to become healthy and verify connectivity.
-3. Deploy the API as a container with one worker, its ingestion/projection loops,
-   and durable PDF storage. `PDF_STORAGE=postgres` now stores private PDF originals
-   transactionally in PostgreSQL and restores the ephemeral extraction cache.
-   Default quotas are 100 MB per tenant and 500 MB overall. Tenant isolation,
-   integrity failure, quota rejection and extraction after cache loss were tested.
-4. Set secrets privately, `COOKIE_SECURE=true`, and the exact Vercel origin in
-   `CORS_ORIGINS`. Keep graph and database connections authenticated and encrypted.
-5. Replace the `/api/:path*` unavailable rewrite with the actual backend HTTPS
-   origin, preserving same-origin session cookies. Remove the temporary handler.
-6. Use `python -m context_app.cloud_start` as the Render Docker Command. Set
-   `BOOTSTRAP_ADMIN_EMAIL` and a private `BOOTSTRAP_ADMIN_PASSWORD` of at least
-   12 characters for the first deployment, then remove these variables. Bootstrap
-   only runs in an empty account database, never resets existing credentials,
-   and requires a password change on first sign-in.
-7. Verify sign-in, onboarding, upload, graph retrieval, corrections, audit and export
-   against the cloud services before calling this a working competition demo.
+## Hosted AI
 
-Provider limitations checked against official documentation:
+The owner approved copying the existing OpenAI key into Render's private backend
+configuration and enabling `gpt-4.1-mini-2025-04-14` with a **$0.25 application
+usage ceiling**. Rates configured: $0.40 input / $1.60 output per million tokens.
+The key is absent from public source and the frontend bundle. The application
+reserves budget before each call and records usage in cloud PostgreSQL. This is
+an application limit, not an account-wide OpenAI billing limit.
 
-- https://render.com/docs/free — free services sleep, have ephemeral filesystems;
-  free Render PostgreSQL expires after 30 days. Neon Free is an alternative for
-  PostgreSQL: https://neon.com/pricing.
-- https://www.falkordb.com/plans/ — the advertised free cloud tier currently omits
-  TLS and VPC. Confirm encrypted transport is available before sending real
-  customer data; do not disable certificate verification or silently use plaintext.
+Configuration is enabled; an authenticated customer model run has not yet been
+verified in this hosted environment. Configuration alone is not a successful live
+agent demonstration.
 
-Provider account sign-in, terms acceptance, and credentials remain external setup
-steps. Do not paste tokens or passwords into a public issue or submission document.
+## Verification completed
 
-Verification: 82 backend tests passed, one Windows-specific test skipped. The
-additional ingestion-after-cache-loss test subsequently passed with the two other
-storage tests. No new paid OpenAI calls were used for this hosting work.
+- Render deployment succeeded; public API readiness returned 200 / `ready`.
+- Vercel readiness proxy returned 200 JSON.
+- Vercel CSRF endpoint returned 200 JSON with a Secure cookie and `no-store`.
+- Signed-out identity and dossier routes returned 401 JSON with `no-store`.
+- Administrator sign-in succeeded through the Vercel UI; company management loaded.
+- Full local backend suite: 82 passed, one Windows-specific skip. The additional
+  extraction-after-cache-loss test then passed with the other storage tests.
+- Clean committed-source checkout: 60 passed, 12 explicit skips (including cases
+  whose fixtures are excluded from the public source).
+- GitHub Linux verification succeeded for the hosting changes. Storage tests
+  cover tenant isolation, integrity failures, quota rejection and cache loss.
+
+Hosted customer onboarding, PDF upload, graph corrections, audit, exports and a
+paid model investigation still need an authenticated cloud acceptance pass.
+Successful hosting does not mean every item in `GRAPH_HACKS_WORKPLAN.md` is done.
+
+## Free-tier limits
+
+No paid hosting plans were enabled. Render Free sleeps after inactivity and cold
+requests can take 50 seconds or longer. Its PostgreSQL database expires after 30
+days; export or migrate data before the date above. Database retention also limits
+PDF retention. General scanned OCR is not installed in this lightweight image.
+
+FalkorDB's advertised free tier omits TLS, VPC and automated backups. This
+deployment is for **synthetic competition data only**, not real customer records.
+Use an encrypted graph connection and appropriate backups before production use.
+Vercel and Render enforce their own limits in addition to application upload limits.
+
+Official references: https://render.com/docs/free,
+https://www.falkordb.com/plans/, https://vercel.com/docs/routing/rewrites.
