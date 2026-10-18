@@ -3,5 +3,8 @@
   "buildCommand": "npm run build",
   "outputDirectory": "frontend/dist",
   "installCommand": "npm --prefix frontend ci",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/unavailable" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }
