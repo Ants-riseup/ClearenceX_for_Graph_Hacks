@@ -19,7 +19,7 @@ Updated 18 October 2026, Asia/Colombo. This is a local release record, not a sub
 
 | Gate | Status |
 |---|---|
-| Public repository | Public repository confirmed through an unauthenticated GitHub page; the final remediation commit must also be verified after publishing |
+| Public repository | Updated through commit `d32eef6`; public commit page verified without signing in and remote main matched local HEAD. Subsequent evidence-only commits retain the same application code. |
 | Actual working demo video | Pending human recording; use DEMO.md |
 | Full visual/keyboard/mobile walkthrough | Pending; browser security layer denied automation |
 | Registration, actual team and submitted tracks | Team confirmation required; documentation explicitly focuses Track 01 |
@@ -32,3 +32,5 @@ Do not publish the existing Git history without checking it: supplied PDFs and e
 The first-run comparison still has a repeated-correction reasoning failure; deterministic graph state/impact remains tested. It would be misleading to label this release 10/10 or the whole roadmap complete. General OCR, official customs validation and later memory/Company Brain/production features retain their documented scope.
 
 Final documentation corrections remove a misleading pre-seeded demo login and match the license badge to the actual Apache-2.0 LICENSE. Fresh installations generate private credentials instead.
+
+GitHub Actions started for the published release: [verification run](https://github.com/Ants-riseup/ClearenceX_for_Graph_Hacks/actions/runs/39146575337). It was still running at the first check; do not label remote CI passed until its conclusion is verified.

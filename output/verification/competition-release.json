@@ -15,7 +15,9 @@
     "boundary": "Same host; backend uses existing isolated Python dependencies. Not an independent clean-machine or published-checkout check."
   },
   "private_files_preserved_locally": true,
-  "public_repository_updated": false,
+  "public_repository_updated": true,
+  "verified_public_source_commit": "d32eef6",
+  "remote_ci_first_observation": "in_progress; not claimed passed",
   "video_recorded": false,
   "browser_acceptance_completed": false,
   "competition_submission_completed": false
