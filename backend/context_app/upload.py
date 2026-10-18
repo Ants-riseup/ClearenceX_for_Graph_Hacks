@@ -38,6 +38,8 @@ async def upload(request: Request, files: list[UploadFile] = File(...)):
             db.flush()
             ids = []
             for doc in saved:
+                from .pdf_storage import persist_pdf
+                persist_pdf(db, request.state.user['tenant_id'], doc['file_path'])
                 did = uuid.uuid4()
                 ids.append(str(did))
                 db.add(DossierDocument(id=did, dossier_id=uuid.UUID(sid), original_name=doc["original_name"],
@@ -85,6 +87,7 @@ def process_one_upload():
             return False
         row.status = "processing"
         sid = row.id
+        tenant_id = db.get(ContextDossier, str(sid)).tenant_id
         jobs = [{"id": d.id, "path": d.file_path, "name": d.original_name, "status": d.status}
             for d in db.query(DossierDocument).filter_by(dossier_id=sid).all()]
         db.commit()
@@ -97,6 +100,8 @@ def process_one_upload():
                     successful.append(db.get(DossierDocument, job["id"]).extraction_json)
                 continue
             with SessionLocal() as db:
+                from .pdf_storage import restore_pdf
+                restore_pdf(db, tenant_id, job['path'])
                 db.get(DossierDocument, job["id"]).status = "processing"
                 db.commit()
             env = {k: v for k, v in os.environ.items() if k.upper() in {"PATH", "SYSTEMROOT", "WINDIR", "HOME", "USERPROFILE", "TEMP", "TMP", "LD_LIBRARY_PATH"}}

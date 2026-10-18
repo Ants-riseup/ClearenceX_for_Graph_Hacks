@@ -1,5 +1,5 @@
 """Additive tables: historical source data is never silently assigned to a user."""
-from sqlalchemy import Column, String, Integer, Float, BigInteger, ForeignKey, JSON, Index
+from sqlalchemy import Column, String, Integer, Float, BigInteger, ForeignKey, JSON, Index, LargeBinary
 from database.models import Base
 
 
@@ -11,6 +11,15 @@ class Tenant(Base):
     status = Column(String(20), nullable=False, default='active')
     version = Column(Integer, nullable=False, default=1)
     profile = Column(JSON, nullable=False, default=dict)
+
+
+class PrivatePdf(Base):
+    __tablename__ = 'cx_private_pdfs'
+    storage_key = Column(String(255), primary_key=True)
+    tenant_id = Column(String(64), ForeignKey('cx_tenants.id'), nullable=False, index=True)
+    size = Column(Integer, nullable=False)
+    sha256 = Column(String(64), nullable=False)
+    content = Column(LargeBinary, nullable=False)
 
 
 class User(Base):

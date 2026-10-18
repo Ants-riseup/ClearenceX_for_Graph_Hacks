@@ -63,6 +63,14 @@ def first_login_password(connection):
 UPGRADES = [(1, 'initial_additive_schema', initial_schema), (2, 'queue_and_listing_indexes', queue_and_listing_indexes), (3, 'workspace_settings', workspace_settings), (4, 'export_records', export_records), (5, 'reviewed_goods_provenance', reviewed_goods_provenance), (6, 'account_management', account_management), (7, 'company_management', company_management), (8, 'first_login_password', first_login_password)]
 
 
+def durable_private_pdfs(connection):
+    from context_app.models import PrivatePdf
+    PrivatePdf.__table__.create(connection, checkfirst=True)
+
+
+UPGRADES.append((9, 'durable_private_pdfs', durable_private_pdfs))
+
+
 def upgrade(engine):
     # A database transaction and advisory lock serialize startup/admin upgrades.
     # Existing records and tables are preserved. Future schema changes must add

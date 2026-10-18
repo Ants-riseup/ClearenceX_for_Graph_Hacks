@@ -38,6 +38,10 @@ def create_dossier(user, documents=None, title="Shipment dossier", shipment_id=N
         db.add(ContextDossier(id=sid, tenant_id=user["tenant_id"], title=title, revision=1,
             graph_revision=0, state=state, created_at=now()))
         db.flush()
+        from .pdf_storage import persist_pdf
+        for document in state['documents']:
+            if document.get('file_path'):
+                persist_pdf(db, user['tenant_id'], document['file_path'])
         db.add(Outbox(id=str(uuid.uuid4()), dossier_id=sid, revision=1, status="pending", attempts=0, next_attempt=0))
         db.commit()
     return sid
@@ -236,6 +240,9 @@ def replace_document(sid, user, document_id, replacement, expected):
                 if isinstance(goods_row.get(key), str):
                     goods_row[key] = goods_row[key].replace(old['document_id'], replacement['document_id'], 1)
         state["documents"].append(replacement)
+        from .pdf_storage import persist_pdf
+        if replacement.get('file_path'):
+            persist_pdf(db, user['tenant_id'], replacement['file_path'])
         enqueue(db, row, state, user["id"], "source_replaced", {"old_document_id": document_id,
             "new_document_id": replacement["document_id"], "impact": impact})
         db.commit()

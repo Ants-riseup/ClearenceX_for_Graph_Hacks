@@ -175,9 +175,8 @@ def content(document_id: str, request: Request):
         found = next((d for row in rows for d in row.state.get("documents", []) + row.state.get("archived_documents", []) if d["document_id"] == document_id), None)
         if not found:
             raise HTTPException(404, "Document not found.")
-        path = Path(found.get("file_path", "")).resolve()
-        if not path.is_relative_to(DATA_ROOT) or not path.is_file():
-            raise HTTPException(404, "Document file not available.")
+        from .pdf_storage import restore_pdf
+        path = restore_pdf(db, request.state.user['tenant_id'], found.get('file_path', ''))
         return FileResponse(path, media_type="application/pdf", filename=found.get("source_filename", "document.pdf"),
             content_disposition_type="inline", headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
 
