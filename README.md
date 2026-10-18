@@ -29,21 +29,47 @@
 
 ---
 
+<a id="competition-submission"></a>
+
+## 🏁 Graph Hacks Submission
+
+**Entry: Track 01 — Agents That Act on Connected Data.** FalkorDB supplies the connected evidence and dependency traversal used by the agent and the source-correction workflow. Persistent approved memory supports this entry; we are not claiming a completed multi-agent coordination or Company Brain product.
+
+| Required deliverable | Where to find it | Status |
+|---|---|---|
+| Public source-code repository | [Ants-riseup/ClearenceX_for_Graph_Hacks](https://github.com/Ants-riseup/ClearenceX_for_Graph_Hacks) · public `main` branch | Available |
+| README with setup instructions and graph data model | [Local setup](#local-setup) · [Graph data model](#graph-data-model) · [Detailed setup](Docs/LOCAL_SETUP.md) | Included |
+| Cypher queries or graph algorithms the product depends on | [Essential queries and dependency algorithm](#essential-queries) · [Query source directory](backend/context_app/queries/) | Included |
+| Demo video showing the working project | [Demo video status and recording flow](#demo-video) | **Pending: actual public video URL required** |
+| Live deployment, or complete local setup | [Open ClearanceX](https://clearencexforgraphhacks.vercel.app/) · [Deployment status](Docs/HOSTING_STATUS.md) · [Local setup](#local-setup) | Deployed; local instructions included |
+| Track being entered | **Track 01 — Agents That Act on Connected Data** | Declared |
+
+**Project blog:** [When Shipment Evidence Changes, Your AI Should Change Its Mind](https://clearencexforgraphhacks.vercel.app/blog/clearancex-falkordb).
+
+The hosted app uses administrator-provided customer accounts. Judges can also run the complete local setup and create their own private demo account. Hosting readiness and administrator sign-in are verified; the scope of cloud workflow testing and free-tier limits is recorded in [HOSTING_STATUS.md](Docs/HOSTING_STATUS.md).
+
+This checklist maps to the [official submission requirements](https://www.wemakedevs.org/hackathons/falkordb/rules). The entry is not submission-complete until a real demo video is linked. Inherited work and AI assistance are disclosed [below](#ai-assistance-disclosure) and in the [implementation record](Docs/GRAPH_HACKS_DELTA.md).
+
+---
+
 ## 📋 Table of Contents
 
 | Section | Description |
 |---|---|
+| [🏁 Submission checklist](#competition-submission) | Repository, setup, graph, queries, video, deployment and track |
 | [🎯 The Problem](#-the-problem) | Why connected decisions matter |
 | [⚡ How It Works](#-how-it-works) | The 6-step investigation lifecycle |
 | [🔐 Demo Login Credentials](#-demo-login-credentials) | Sign in immediately — credentials inside |
-| [🚀 Quick Start](#-quick-start) | Up and running in minutes |
-| [🕸️ Why a Graph?](#️-why-a-graph) | The dependency model explained |
+| [🚀 Quick Start](#local-setup) | Reproducible local startup and account creation |
+| [🕸️ Why a Graph?](#graph-data-model) | The dependency model explained |
+| [🔎 Essential Cypher queries](#essential-queries) | Executed query files and selective invalidation algorithm |
+| [🎬 Demo video](#demo-video) | Recording status and the working flow to demonstrate |
 | [🤖 The Agent](#-the-agent) | Tools, boundaries and cost controls |
 | [🏗️ Architecture](#️-architecture) | Full system design |
 | [📊 Evaluation Results](#-evaluation-results) | 19/20 graph vs 13/20 flat — real numbers |
 | [🛡️ Security](#️-security) | Argon2id, CSRF, tenant isolation |
 | [🧪 Run the Checks](#-run-the-checks) | Test suite and CI |
-| [⚙️ Optional Live AI](#️-optional-live-ai) | OpenAI config with spending ceiling |
+| [⚙️ Optional Live AI](#live-ai) | OpenAI config with spending ceiling |
 | [📦 Implemented Features](#-implemented-features) | Full feature inventory |
 | [🗺️ Competition Materials](#️-competition-materials) | Judges, submission, demo |
 
@@ -194,6 +220,8 @@ Customer accounts created via the dashboard receive a **temporary password**. On
 
 ---
 
+<a id="local-setup"></a>
+
 ## 🚀 Quick Start
 
 **Requirements:** Docker + Compose, Node.js 24, internet for initial pulls.
@@ -207,9 +235,21 @@ cd ClearenceX_for_Graph_Hacks
 # 2. Generate private DB credentials
 npm run setup:local
 
-# 3. Start all four services
-docker compose --env-file .env.graphhacks up --build -d
+# 3. Start the canonical four-service stack
+docker compose -f compose.yaml --env-file .env.graphhacks up --build -d
+
+# 4. Check that the services are ready
+docker compose -f compose.yaml --env-file .env.graphhacks ps
+
+# 5. Create a private local customer workspace for the demo
+docker compose -f compose.yaml --env-file .env.graphhacks exec api \
+  python -m context_app.admin create-user \
+  --email judge@example.test --tenant "Synthetic judge workspace" --role user
 ```
+
+Open **http://localhost:8080/auth/signin** and use `judge@example.test` with the generated password printed by step 5. This command creates a **local** account; it does not add a user to the hosted deployment. On an existing installation, reuse your existing account instead of repeating account creation.
+
+In **Context Agent**, choose **Create synthetic example**, wait for graph synchronization, then investigate, review and apply the packing-list correction. The synthetic example uses labeled precomputed extraction. For actual digital-PDF extraction, upload PDFs through **Upload a dossier**. Live AI investigation is optional and requires the separate [model configuration](#live-ai); deterministic graph evidence and human review work without paid model calls.
 
 > **Windows without Node.js?** Use PowerShell:
 > ```powershell
@@ -229,7 +269,13 @@ docker compose --env-file .env.graphhacks up --build -d
 
 ---
 
+<a id="graph-data-model"></a>
+
 ## 🕸️ Why a Graph?
+
+**Primary graph database: FalkorDB.** PostgreSQL holds authoritative records, account ownership, jobs and the projection outbox. Each authenticated tenant has a backend-selected `clearancex_<tenant UUID>` graph. Nodes are scoped by shipment and immutable snapshot revision; keys combine shipment, revision and node identity. Assertion payloads preserve raw/normalized values, units, source IDs and page references. PDF bytes and private filesystem paths are excluded from graph context.
+
+The outbox projects a complete snapshot before publishing `graph_revision`. Graph-dependent actions require the current dossier and graph revisions to match. [Full node properties, tenant boundaries, projection and recovery](Docs/GRAPH_MODEL.md).
 
 ```mermaid
 flowchart LR
@@ -270,6 +316,71 @@ GoodsReview -DEPENDS_ON-> Assertion (invoice row + packing source)
 Essential executed queries: [`evidence`](backend/context_app/queries/evidence.cypher) · [`impact`](backend/context_app/queries/impact.cypher) · [`memory`](backend/context_app/queries/memory.cypher) · [full schema](Docs/GRAPH_MODEL.md)
 
 > **No SQL fallback.** Missing or unsynchronized graph context fails explicitly — it never silently switches to SQL or canned answers.
+
+---
+
+<a id="essential-queries"></a>
+
+## 🔎 Essential Cypher Queries and Graph Algorithm
+
+These are the saved queries executed by the product through [`GraphRepository`](backend/context_app/graph.py). Caller values are bound parameters; labels and relationship types come from fixed application code. The agent does not generate arbitrary Cypher.
+
+| Query source | Product dependency |
+|---|---|
+| [`evidence.cypher`](backend/context_app/queries/evidence.cypher) | Retrieves active source assertions for a canonical field, scoped to shipment and revision. |
+| [`issues.cypher`](backend/context_app/queries/issues.cypher) | Retrieves field context and comparison statuses used to investigate discrepancies. |
+| [`rules.cypher`](backend/context_app/queries/rules.cypher) | Connects a field's rule evaluations to the comparison rule and its version. |
+| [`memory.cypher`](backend/context_app/queries/memory.cypher) | Retrieves active approved memory linked to decisions; the repository also checks memory expiry. |
+| [`impact.cypher`](backend/context_app/queries/impact.cypher) | Follows one to four dependency edges to find decisions, memory, tasks, goods reviews and exports affected by a source revision. |
+| [`visual.cypher`](backend/context_app/queries/visual.cypher) | Retrieves the current shipment snapshot for the graph explorer. |
+
+The core traversal in `impact.cypher` is:
+
+```cypher
+MATCH (s:Shipment {id:$shipment_id, revision:$revision})
+      -[:HAS_DOCUMENT]->(source:Document {id:$source_id})
+MATCH (affected)-[:DEPENDS_ON*1..4]->(source)
+WHERE affected.shipment_id = $shipment_id
+  AND affected.revision = $revision
+  AND (affected:Decision OR affected:Memory OR affected:ReviewTask
+       OR affected:ExportSnapshot OR affected:GoodsReview)
+RETURN DISTINCT affected.id, affected.payload
+ORDER BY affected.id
+LIMIT 101
+```
+
+The excerpt shows the dependency traversal; the [complete executed query](backend/context_app/queries/impact.cypher) also returns each artifact's type.
+
+**Selective invalidation algorithm:**
+
+1. Authorize and lock the dossier, then check the caller's expected revision.
+2. Query FalkorDB for artifacts depending on the source being replaced.
+3. Reject the change if graph context is unavailable or the result exceeds the 100-artifact safety limit; `LIMIT 101` detects overflow.
+4. Mark affected current decisions and pending tasks stale, invalidate dependent goods reviews, and preserve unrelated approvals. Derived stale memory is excluded from subsequent recall. Export artifacts remain bound to their source revision.
+5. Archive the old document, save the replacement, and enqueue the next graph snapshot in the same database transaction. Graph-dependent actions wait for synchronization.
+
+For implementation and reproducible checks, see [`service.py`](backend/context_app/service.py), [the graph model](Docs/GRAPH_MODEL.md) and [the judge guide](Docs/JUDGE_GUIDE.md).
+
+---
+
+<a id="demo-video"></a>
+
+## 🎬 Demo Video
+
+**Recording URL: pending — no actual published demo video has been supplied.**
+
+The [recording script](Docs/DEMO.md) is ready. It is preparation material, not a completed video. Add the actual public video link here before submitting, and confirm that it plays without account access.
+
+The recording should show the working application:
+
+1. Sign in to a customer workspace and open a synthetic shipment dossier.
+2. Show the invoice/packing-list 450 kg versus transport-document 440 kg conflict and its PDF evidence.
+3. Run the configured AI investigation; show real tool activity, citations and a pending review task.
+4. Approve packing-list weight and a separate invoice package-count decision as a human reviewer.
+5. Correct the packing list to 440 kg; show graph-derived impact, stale weight approval and the unaffected package-count approval.
+6. Reopen the dossier to show current approved memory and retained review history; show the essential Cypher and evaluation evidence.
+
+Label precomputed synthetic extraction clearly. Only describe an AI investigation as successful when its actual run and trace are shown. Follow the submission form's real video-length limit.
 
 ---
 
@@ -428,6 +539,8 @@ Same-team authored after earlier development; not independent third-party valida
 
 ---
 
+<a id="live-ai"></a>
+
 ## ⚙️ Optional Live AI
 
 Graph evidence, human review, memory and correction work **without inference**. `Run investigation` requires OpenAI API access.
@@ -548,6 +661,10 @@ npm run lint      # ESLint — no errors, 9 existing React warnings
 
 | Resource | Link |
 |---|---|
+| 🌐 Public source repository | [GitHub](https://github.com/Ants-riseup/ClearenceX_for_Graph_Hacks) |
+| 🚀 Hosted app | [ClearanceX](https://clearencexforgraphhacks.vercel.app/) |
+| 📝 Project blog | [Published article](https://clearencexforgraphhacks.vercel.app/blog/clearancex-falkordb) |
+| 🎥 Actual demo video | [Pending recording URL](#demo-video) |
 | 📋 Judge guide | [Docs/JUDGE_GUIDE.md](Docs/JUDGE_GUIDE.md) |
 | 🎬 Demo script (3-minute) | [Docs/DEMO.md](Docs/DEMO.md) |
 | 🧩 Graph model + Cypher | [Docs/GRAPH_MODEL.md](Docs/GRAPH_MODEL.md) |
@@ -588,9 +705,11 @@ React review/dossier/audit/export screens; FastAPI + PostgreSQL models; local PD
 **Unfinished roadmap (honest scope):**
 General scanned/arbitrary-table OCR, calibrated confidence, full goods editing, licensed tariffs, cross-shipment Company Brain, JWT/MFA, production HTTPS/load, official customs validation and public submission materials.
 
+<a id="ai-assistance-disclosure"></a>
+
 ### AI Assistance Disclosure
 
-**Codex assisted** implementation, documentation and tests. Participants remain responsible for reviewing and understanding the source, graph model, queries, architecture and measurements. Public publication, an actual video, registration and competition submission are separate deliverables. No winning result is promised.
+**Codex assisted** implementation, documentation and tests. Participants remain responsible for reviewing and understanding the source, graph model, queries, architecture and measurements. The repository, hosted app and project blog are public. An actual demo video, registration verification and final competition submission remain separate deliverables. No winning result is promised.
 
 [→ Official rules](https://www.wemakedevs.org/hackathons/falkordb/rules) · [→ Full work plan](GRAPH_HACKS_WORKPLAN.md)
 
