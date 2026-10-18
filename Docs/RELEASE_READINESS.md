@@ -7,7 +7,7 @@ Updated 18 October 2026, Asia/Colombo. This is a local release record, not a sub
 - Rewritten competition-focused README with Track 01, actual graph-dependent behavior, architecture, setup, security, evaluation and limitations.
 - Judge guide, submission draft, concrete manual acceptance checklist and existing/new-work disclosure.
 - Cross-platform setup generates private database credentials and preserves existing configuration.
-- GitHub Actions workflow added for isolated backend/frontend tests, build, lint and source packaging. Remote execution is not yet verified.
+- GitHub Actions passed on a fresh Linux runner for published commit `d32eef6`: public checkout, dependency installation, selected backend tests, component tests, build, lint and source packaging/artifact upload. This verifies a separate clean runner; it is not third-party security certification.
 - Ten fresh acceptance dossiers/twenty questions and a frozen, cost-bounded first model comparison: **19/20 graph versus 13/20 flat**, $0.0455048 estimated. The failure is retained.
 - Fresh selected backend suite: **79 passed, 1 skipped**, one existing Starlette/httpx deprecation warning, 145.33 seconds. The skip is the Windows stdio case; retained packaged Linux MCP evidence is separate.
 - Fresh frontend suite: **29 passed**. TypeScript/Vite production build passes; no main-chunk size warning. Lint has no errors and nine existing React warnings.
@@ -33,4 +33,4 @@ The first-run comparison still has a repeated-correction reasoning failure; dete
 
 Final documentation corrections remove a misleading pre-seeded demo login and match the license badge to the actual Apache-2.0 LICENSE. Fresh installations generate private credentials instead.
 
-GitHub Actions started for the published release: [verification run](https://github.com/Ants-riseup/ClearenceX_for_Graph_Hacks/actions/runs/39146575337). It was still running at the first check; do not label remote CI passed until its conclusion is verified.
+GitHub Actions completed with **success** for published commit `d32eef6`: [verified run](https://github.com/Ants-riseup/ClearenceX_for_Graph_Hacks/actions/runs/39146575337). Subsequent release-record updates do not change application code. No provider key or private supplied PDFs were required; private-input cases skip explicitly.
