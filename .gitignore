@@ -24,3 +24,6 @@ output/release/
 
 # Supplied shipment documents remain local; release demos use synthetic data.
 /Docs/TEST FILE/
+
+# Hosting links and locally pulled platform environment files.
+.vercel/
