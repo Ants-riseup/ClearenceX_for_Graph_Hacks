@@ -38,6 +38,7 @@ class GraphRepository:
             raise ValueError("Invalid trusted tenant identifier")
         self.client = FalkorDB(host=os.getenv("FALKORDB_HOST", "localhost"),
             port=int(os.getenv("FALKORDB_PORT", "6379")),
+            username=os.getenv("FALKORDB_USERNAME") or None,
             password=os.getenv("FALKORDB_PASSWORD"),
             socket_connect_timeout=3, socket_timeout=6,
             ssl=os.getenv("FALKORDB_TLS", "false").lower() == "true")
