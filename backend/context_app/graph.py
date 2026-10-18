@@ -9,6 +9,7 @@ from reasoning.entity_resolution import resolve_documents, apply_manual_resoluti
 from reasoning.comparison import describe, VERSION
 
 QUERIES = Path(__file__).parent / "queries"
+QUERY_NAMES = frozenset(path.stem for path in QUERIES.glob('*.cypher'))
 LABELS = {"Shipment", "Document", "Assertion", "CanonicalField", "Decision", "Memory", "ReviewTask", "RuleEvaluation", "Rule", 'AgentRun', 'ExportSnapshot', 'GoodsReview'}
 EDGES = {"HAS_DOCUMENT", "HAS_FIELD", "CONTAINS", "ASSERTS_VALUE_FOR", "DEPENDS_ON", "ABOUT", "BASED_ON", "RESOLVES", "DERIVED_FROM", "EVALUATES", "USES_RULE", "SUPPORTED_BY", 'INVESTIGATED', 'PROPOSED', 'RECALLED', 'RETRIEVED'}
 
@@ -43,6 +44,8 @@ class GraphRepository:
         self.graph = self.client.select_graph("clearancex_" + tenant_id)
 
     def query(self, name, shipment_id, revision, **params):
+        if name not in QUERY_NAMES:
+            raise HTTPException(422, 'Unknown graph operation.')
         try:
             marker = self.graph.ro_query('MATCH (s:Shipment {id:$sid, revision:$revision}) RETURN s.id LIMIT 1',
                 params={'sid': shipment_id, 'revision': revision}, timeout=3000).result_set

@@ -1,5 +1,9 @@
 # Graph Hacks work plan - completion report
 
+**Current web/password update — 18 October 2026:** Admin-created customer accounts now sign in with temporary credentials and must choose their own password before entering the shipment product. Admin confirmation/filtering, graph dependency preview, keyboard navigation and route loading are improved. **78 backend tests passed, 1 skipped; 28 frontend tests passed; 38 live customer checks and 13 graph/product checks passed.** See [the current implementation report](WEB_POLISH_REPORT.md). The original Overview and recommended competition features are retained. Earlier validation counts below describe previous stages; broad roadmap/submission gates remain open.
+
+
+
 **Latest sign-off — 18 October 2026:** The nine runtime findings reported after the initial extraction repair are now resolved. The running four-PDF flow reaches a correct two-item test XML; 62 selected tests pass with one skipped. See [NINE_FIXES_VERIFICATION.md](NINE_FIXES_VERIFICATION.md). This completes the reported bug-fix scope; broader roadmap and external submission items below retain their stated limits.
 
 **Project:** ClearanceX Context Agent  
@@ -8,9 +12,9 @@
 
 ## Verdict
 
-**Current local validation — 18 October 2026:** Initial four-PDF classification/extraction defects have been fixed and retested in the running build (55 selected tests passed, one skipped). The application is still **not fully okay**: nine confirmed runtime/serializer/source findings include incomplete export-required fields, incorrect goods export gates, invalid exchange rates reaching XML and missing reviewed-goods invalidation. See [the local runtime bug report](LOCAL_RUNTIME_BUG_REPORT.md). Older observations below are historical within their stated scope.
+**Historical observation before the nine fixes — 18 October 2026:** Initial four-PDF classification/extraction defects were fixed at this stage (55 selected tests passed, one skipped), but nine subsequent runtime/serializer/source findings remained. Those nine findings have since been fixed and verified in [NINE_FIXES_VERIFICATION.md](NINE_FIXES_VERIFICATION.md). The [local runtime bug report](LOCAL_RUNTIME_BUG_REPORT.md) preserves the original findings.
 
-**New input check — 18 October 2026:** The four supplied PDFs uploaded and downloaded correctly, but extraction accuracy failed: important fields and every goods row were missed, and the customs worksheet was classified as an invoice. The synthetic core-flow results below do not establish readiness for these inputs. See [the four-PDF verification report](FOUR_PDF_VERIFICATION_REPORT.md).
+**Historical input check before extraction repair — 18 October 2026:** The four supplied PDFs originally exposed missed fields/goods and worksheet classification errors. The defects were repaired and those inputs later passed the documented supported flow. See [the original four-PDF report](FOUR_PDF_VERIFICATION_REPORT.md) and [the subsequent verification](NINE_FIXES_VERIFICATION.md); synthetic results alone still do not establish general PDF accuracy.
 
 **The core local competition application is implemented and substantially verified. The entire work plan is NOT fully complete.** The plan also contains wider product work, optional research features and external competition tasks. Those must not be marked complete because the core demo works. No misleading overall percentage is assigned.
 
@@ -77,7 +81,7 @@ See [EVALUATION.md](EVALUATION.md) and machine-readable records in `output/verif
 | APP-15 Export preview | Partial | Persisted provenance/reviewer/template/hash and current-version checks; complete source-linked preview UI and official compatibility remain. |
 | APP-16 Performance | Partial | Graph indexes, bounded reads and lazy graph screen; warm benchmark recorded. Full load/before-after program remains. |
 | APP-17 Tariffs | Deferred | Sample data disclosed; no licensed maintained tariff source or authoritative advice. |
-| APP-18 Operations/onboarding | Partial | Actual counters, onboarding steps, retention preview and recovery commands. Full user administration, retention execution and email remain. |
+| APP-18 Operations/onboarding | Partial | Actual counters, onboarding, recovery and private Admin/User account management are implemented. Retention execution, MFA and email delivery remain. |
 
 ## Competition recommendations retained
 

@@ -21,7 +21,7 @@ def test_migrations_are_recorded_and_repeatable():
     init_db()
     with engine.connect() as db:
         after = db.execute(text('SELECT version, name FROM cx_schema_migrations ORDER BY version')).all()
-    assert before == after and [r[0] for r in after] == [1, 2, 3, 4, 5]
+    assert before == after and [r[0] for r in after] == [1, 2, 3, 4, 5, 6, 7, 8]
 
 
 def test_failed_publication_is_retryable_and_does_not_finish_job(reviewer, monkeypatch):

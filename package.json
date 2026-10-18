@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "setup:local": "node scripts/setup-local.mjs",
+    "test:ui": "npm --prefix frontend test",
     "dev": "npm --prefix frontend run dev",
     "build": "npm --prefix frontend run build",
     "lint": "npm --prefix frontend run lint",

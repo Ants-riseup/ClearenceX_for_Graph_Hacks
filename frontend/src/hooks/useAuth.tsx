@@ -1,11 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import { api, signIn, signOut, type AuthUser } from '../utils/api';
+import { api, signIn, signOut, changePassword, type AuthUser } from '../utils/api';
 import { useShipment } from './useShipment';
 
 interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<AuthUser>;
+  updatePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -24,9 +25,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.addEventListener('clearancex:unauthorized', clear);
     return () => window.removeEventListener('clearancex:unauthorized', clear);
   }, [clear]);
-  const login = async (email: string, password: string) => { const next = await signIn(email, password); setShipmentId(null); setUser(next); };
+  const login = async (email: string, password: string) => { const next = await signIn(email, password); setShipmentId(null); setUser(next); return next; };
+  const updatePassword = async (currentPassword: string, newPassword: string) => { const next = await changePassword(currentPassword, newPassword); setShipmentId(null); setUser(next); };
   const logout = async () => { await signOut(); clear(); };
-  return <AuthContext.Provider value={{ user, loading, login, logout }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, loading, login, logout, updatePassword }}>{children}</AuthContext.Provider>;
 }
 export function useAuth() {
   const value = useContext(AuthContext);

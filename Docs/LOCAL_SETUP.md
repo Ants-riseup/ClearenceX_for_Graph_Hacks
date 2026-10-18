@@ -3,16 +3,21 @@
 ## Application
 
 1. Install Docker/Compose and Node only if doing host development. The default Docker flow needs no hosted database or authentication subscription.
-2. Run `powershell -ExecutionPolicy Bypass -File scripts/setup-local.ps1` from the root. It creates `.env.graphhacks` with generated passwords and does not overwrite an existing file. Linux/macOS users can copy the example and generate passwords themselves.
+2. Run `npm run setup:local` with Node 24 on Windows/Linux/macOS, or `powershell -ExecutionPolicy Bypass -File scripts/setup-local.ps1` on Windows. Both create `.env.graphhacks` with generated database passwords and preserve an existing file. Live inference starts disabled.
 3. Run `docker compose --env-file .env.graphhacks up --build -d`.
-4. Create an account with `docker compose --env-file .env.graphhacks exec api python -m context_app.admin create-user --email you@example.com`.
-5. Open `http://localhost:8080`. Save the generated account password privately; it is not a shared fixture password.
+4. Create your initial administrator with `docker compose --env-file .env.graphhacks exec api python -m context_app.admin create-user --email you@example.com --role admin`. Omitting `--role` creates an ordinary User.
+5. Grant explicit platform authority: `docker compose --env-file .env.graphhacks exec api python -m context_app.admin grant-platform-admin --email you@example.com`.
+6. Open `http://localhost:8080`, sign in and use **Add customer user** in the admin dashboard. Save generated credentials privately.
 
-During this implementation session the local stack was started and a reviewer account plus one synthetic dossier were created. Their generated credentials are saved privately in the ignored `tmp/local-access.txt` file. Do not publish that file or include it in the competition submission. The browser walkthrough remains pending because the browser permission gate denied access in this session.
+During this implementation session the local stack was started and a reviewer account plus test dossiers were created. Their generated credentials are saved privately in the ignored `tmp/local-access.txt` file. Do not publish that file or include it in the competition submission. See [UI verification](UI_VERIFICATION_REPORT.md) for completed Chrome checks and the remaining browser permission limitation.
 
-Additional accounts: use the same `--tenant` name to add a teammate, or a different name to create an isolated workspace. `--role viewer` creates a read-only account; `--role admin` is available for local administration. Public signup is disabled. Historical unowned dossiers are not assigned by guessing an owner. Account recovery and ownership migration require an explicit administrative process; no email-recovery service is simulated.
+The ClearanceX administrator uses `/admin/companies` to add customer login accounts (company name, email and optional password), edit details, reset passwords and manage access. Each onboarding creates a private company workspace. Added customers sign in to the existing shipment product; public signup is restricted. Platform privileges require the explicit operator CLI grant and are not assigned by the customer form or a workspace role. See [ADMIN_CUSTOMER_FLOW.md](ADMIN_CUSTOMER_FLOW.md).
 
-The API uses one process/ingestion worker in Compose. Run `python -m context_app.admin migrate` for an explicit repeatable additive schema setup. Five ordered transactional migrations record the additive schema, indexes, workspace settings, export/batch tables and reviewed-goods provenance in `cx_schema_migrations`. Existing legacy records are preserved; no automatic downgrade or data deletion runs. `python -m context_app.admin migration-status` prints applied versions. Review database changes and take a backup before migrating an existing database. Startup also ensures the additive tables exist. Automatic destructive migrations are not performed.
+Existing local passwords were preserved. Private operator/customer credentials remain in ignored `tmp/admin-access.json` and `tmp/local-access.txt`; never publish either file. Customer access removal preserves shipment history. The prior role-management screen and API are retired.
+
+The API uses one process/ingestion worker in Compose. Run `python -m context_app.admin migrate` for an explicit repeatable additive schema setup. Eight ordered transactional migrations record the additive schema, indexes, workspace settings, export/batch tables, reviewed-goods provenance, account-management status/events platform/customer company management and first-login password setup in `cx_schema_migrations`. Existing legacy records are preserved; no automatic downgrade or data deletion runs. `python -m context_app.admin migration-status` prints applied versions. Review database changes and take a backup before migrating an existing database. Startup also ensures the additive tables exist. Automatic destructive migrations are not performed.
+
+New dashboard-created customers sign in with their temporary password and are redirected to `/auth/change-password`. They must enter the current password and choose/confirm a new 10–128 character password before shipment APIs unlock. Password reset repeats this flow. Existing local password choices are preserved. See [the web/password report](WEB_POLISH_REPORT.md).
 
 ## Optional inference
 
@@ -49,6 +54,8 @@ The packaged smoke `docker compose --env-file .env.graphhacks exec -T api python
 ## Host development and tests
 
 Create `.venv`, install `backend/requirements-test.txt`, and run `npm --prefix frontend ci`. Start isolated infrastructure with `npm run test:infra`; ports are 5449 and 6399. Run `npm test`.
+
+Use Node.js 24 and run `npm run test:ui` for the 29 isolated frontend interaction checks, including account management. No service, API key or paid call is needed for that suite. These are simulated DOM interactions, not OS file-dialog or full browser tests.
 
 For a host API point `DATABASE_URL`, `FALKORDB_HOST/PORT/PASSWORD`, `UPLOAD_ROOT` and `CORS_ORIGINS` at your intended local services. From backend run `python -m uvicorn main:app --port 8000`; root `npm run dev` starts Vite with a same-origin `/api` proxy. Keep origins consistent: localhost and 127.0.0.1 differ for cookies and origin checks.
 

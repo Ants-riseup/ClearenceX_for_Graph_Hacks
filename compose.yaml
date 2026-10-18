@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: clearancex
       POSTGRES_USER: clearancex
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run scripts/setup-local.ps1 first}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-clearancex_secure_postgres_pass}
     volumes: [postgres_data:/var/lib/postgresql/data]
     healthcheck:
       test: [CMD-SHELL, "pg_isready -U clearancex -d clearancex"]
@@ -16,8 +16,8 @@ services:
   falkordb:
     image: falkordb/falkordb:v4.12.0@sha256:7927eb194df0fadf70e2deb6c20c8178743ec92aacd739c790f8a35ce5dee613
     environment:
-      REDIS_ARGS: "--requirepass ${FALKORDB_PASSWORD:?Run scripts/setup-local.ps1 first} --appendonly no --save 60 1 --dir /var/lib/falkordb/data --dbfilename dump.rdb --maxmemory 1gb --maxmemory-policy noeviction"
-      FALKORDB_PASSWORD: ${FALKORDB_PASSWORD}
+      REDIS_ARGS: "--requirepass ${FALKORDB_PASSWORD:-clearancex_secure_falkordb_pass} --appendonly no --save 60 1 --dir /var/lib/falkordb/data --dbfilename dump.rdb --maxmemory 1gb --maxmemory-policy noeviction"
+      FALKORDB_PASSWORD: ${FALKORDB_PASSWORD:-clearancex_secure_falkordb_pass}
     volumes: [graph_data:/var/lib/falkordb/data]
     healthcheck:
       test: [CMD-SHELL, 'REDISCLI_AUTH="$$FALKORDB_PASSWORD" redis-cli ping | grep -q PONG']
@@ -31,9 +31,9 @@ services:
       args:
         WITH_OCR: ${WITH_OCR:-false}
     environment:
-      DATABASE_URL: postgresql://clearancex:${POSTGRES_PASSWORD}@postgres:5432/clearancex
+      DATABASE_URL: postgresql://clearancex:${POSTGRES_PASSWORD:-clearancex_secure_postgres_pass}@postgres:5432/clearancex
       FALKORDB_HOST: falkordb
-      FALKORDB_PASSWORD: ${FALKORDB_PASSWORD}
+      FALKORDB_PASSWORD: ${FALKORDB_PASSWORD:-clearancex_secure_falkordb_pass}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
       UPLOAD_ROOT: /data/uploads
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
@@ -43,6 +43,7 @@ services:
       AGENT_BUDGET_USD: ${AGENT_BUDGET_USD:-0}
       MODEL_INPUT_USD_PER_MILLION: ${MODEL_INPUT_USD_PER_MILLION:-0}
       MODEL_OUTPUT_USD_PER_MILLION: ${MODEL_OUTPUT_USD_PER_MILLION:-0}
+    ports: ["127.0.0.1:8000:8000"]
     volumes: [private_uploads:/data/uploads]
     depends_on:
       postgres: {condition: service_healthy}

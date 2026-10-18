@@ -1,0 +1,26 @@
+{
+  "checked_at": "2026-10-18T11:45:25.867752+00:00",
+  "scope": "Real local HTTP account APIs; no browser or paid model calls",
+  "passed": 18,
+  "checks": [
+    "Administrator signs in to running app",
+    "Anonymous account listing denied",
+    "Public signup restricted",
+    "Public registration restricted",
+    "Running database and graph ready",
+    "Admin account list available",
+    "Admin creates User account",
+    "Generated password signs in",
+    "User cannot list accounts",
+    "User cannot read account administration log",
+    "User cannot create or elevate accounts",
+    "SQL-shaped search treated as a value",
+    "Admin resets password without email service",
+    "Password reset revokes previous session",
+    "Replacement generated password signs in",
+    "Admin disables QA account while preserving history",
+    "Disabled account session denied",
+    "Account activity log available"
+  ],
+  "qa_account_left_disabled": true
+}

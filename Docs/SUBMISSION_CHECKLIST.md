@@ -1,5 +1,7 @@
 # Submission handover — ClearanceX Context Agent
 
+**18 October release update:** Track 01 is now explicit in the rewritten README. A judge guide, submission draft, manual acceptance sheet, automated CI workflow and fresh frozen comparison are prepared. Latest selected tests: **79 backend passed/1 skipped; 29 UI passed**. The new comparison scored **19/20 graph versus 13/20 flat**, with its failure retained. See [RELEASE_READINESS.md](RELEASE_READINESS.md) and [ACCEPTANCE_EVALUATION.md](ACCEPTANCE_EVALUATION.md). Publication, video, human UI acceptance, eligibility and the actual submission remain external gates.
+
 Date: 17 October 2026, Asia/Colombo. This is a handover checklist, not evidence that a submission has been made.
 
 ## Verified technical material
@@ -21,7 +23,7 @@ Date: 17 October 2026, Asia/Colombo. This is a handover checklist, not evidence 
 - [ ] Review and publish the intentional source in a public repository. The local source archive is a review artifact, not a public repository.
 - [ ] Record an actual demo video. Browser automation remains blocked by a saved/managed permission policy; no click-through recording or fake replacement has been claimed.
 - [ ] Review the UI manually and verify source pages, keyboard operation, mobile layout and failure states.
-- [ ] Choose and name the submitted track. Track 01 is the demonstrated focus. Basic same-dossier memory is proven; do not claim cross-shipment learning, multiple agents or Company Brain behavior.
+- [x] Choose and name the intended track in project documentation: **Track 01 — Agents That Act on Connected Data**. The actual submission form still needs the team to select it. Do not claim cross-shipment learning, multiple agents or Company Brain behavior.
 - [ ] Verify repository/video/setup links from a signed-out environment.
 - [ ] Confirm rights to submitted code, fonts/assets and data, and explain meaningful participant contribution and understanding.
 - [ ] Complete the official submission and retain its confirmation.

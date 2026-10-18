@@ -3,6 +3,7 @@ import { api, apiError } from '../../utils/api';
 import { useShipment } from '../../hooks/useShipment';
 import { useAuth } from '../../hooks/useAuth';
 import { DossierControls } from '../review/DossierControls';
+import { ChangeImpactPanel } from '../review/ChangeImpactPanel';
 
 interface Task { id: string; field_id: string; evidence_ids: string[]; reason: string; status: string }
 interface Decision { id: string; field_id: string; value: string | number; reason: string; validity_state: string; status: string }
@@ -27,7 +28,7 @@ export function ScreenContextAgent() {
   const [source, setSource] = useState<Evidence | null>(null);
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [draftStatus, setDraftStatus] = useState('');
-  const canWrite = user?.role === 'reviewer' || user?.role === 'admin';
+  const canWrite = user?.role === 'user' || user?.role === 'reviewer' || user?.role === 'admin';
   const synced = context?.status === 'synced';
   const evidence = evidenceResult?.fieldId === fieldId && synced ? evidenceResult.values : [];
   const base = `/shipments/${shipmentId}`;
@@ -139,6 +140,7 @@ export function ScreenContextAgent() {
           {pending.map(t => <p key={t.id} className="text-sm rounded-lg bg-primary-fixed/20 p-3">Pending task: {t.reason}</p>)}
         </section>
       </div>
+      {context && <ChangeImpactPanel key={`${shipmentId}:${context.source_revision}:${context.graph_revision}`} shipmentId={shipmentId} documents={context.documents} revision={context.graph_revision} synced={synced} />}
       {context && <DossierControls id={shipmentId} revision={context.source_revision} title={context.title} documents={context.documents} archived={context.archived_documents ?? []} writable={canWrite} synced={synced} onSaved={refresh} />}
       {source && <section className="p-4 bg-surface-container-lowest rounded-xl"><div className="flex justify-between gap-4 mb-3"><h2 className="font-semibold">{source.document_label} · page {source.page}</h2><button className="text-primary" onClick={() => setSource(null)}>Close source</button></div><iframe title={`${source.document_label} page ${source.page}`} src={`${api.defaults.baseURL}/documents/${source.document_id}/content#page=${source.page}`} className="w-full h-[550px] border rounded-lg" /><p className="text-xs text-outline mt-2">Source page shown. A bounding-box highlight is available only when a measured location exists.</p></section>}
       <section className="p-5 bg-surface-container-lowest border rounded-xl flex flex-col gap-3">

@@ -4,7 +4,7 @@ import io
 import time
 import uuid
 from pathlib import Path
-from fastapi import APIRouter, Request, HTTPException, UploadFile, File, Form, BackgroundTasks
+from fastapi import APIRouter, Request, HTTPException, UploadFile, File, Form, BackgroundTasks, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, ConfigDict
 from pypdf import PdfReader
@@ -21,7 +21,7 @@ router = APIRouter(prefix="/api", tags=["context"])
 
 @router.post("/demo/dossiers", status_code=201)
 def create_demo(request: Request):
-    if request.state.user["role"] not in {"reviewer", "admin"}:
+    if request.state.user["role"] not in {"user", "reviewer", "admin"}:
         raise HTTPException(403, "Reviewer permission required.")
     sid = create_dossier(request.state.user, hero_documents(), "Synthetic evidence-change demonstration")
     return {"shipment_id": sid, "status": "context_pending", "fixture": True}
@@ -51,8 +51,8 @@ def issues(shipment_id: str, request: Request):
 
 
 @router.get("/shipments/{shipment_id}/change-impact")
-def impact(shipment_id: str, document_id: str, request: Request):
-    return {"impact": graph_tool(shipment_id, request.state.user, "get_change_impact", document_id=document_id)}
+def impact(shipment_id: str, document_id: str, request: Request, expected_revision: int | None = Query(default=None, ge=1)):
+    return {"impact": graph_tool(shipment_id, request.state.user, "get_change_impact", expected=expected_revision, document_id=document_id)}
 
 
 @router.get("/shipments/{shipment_id}/context-memory")

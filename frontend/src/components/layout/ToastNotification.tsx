@@ -13,7 +13,7 @@ interface ToastNotificationProps {
 export function ToastNotification({ toast, onClose }: ToastNotificationProps) {
   if (!toast) return null;
   return (
-    <div className="fixed bottom-6 right-6 z-50 max-w-md bg-surface-container-lowest text-on-surface p-4 rounded-xl shadow-2xl border-l-4 border-secondary flex items-start gap-3 transition-all animate-bounce-in">
+    <div role={toast.type === 'error' ? 'alert' : 'status'} className="fixed bottom-4 right-4 left-4 sm:left-auto z-50 max-w-md bg-surface-container-lowest text-on-surface p-4 rounded-xl shadow-2xl border-l-4 border-secondary flex items-start gap-3 transition-all animate-bounce-in">
       <span className="material-symbols-outlined text-secondary text-[22px] shrink-0 mt-0.5">
         {toast.type === 'error' ? 'error' : toast.type === 'info' ? 'info' : 'task_alt'}
       </span>
@@ -21,7 +21,7 @@ export function ToastNotification({ toast, onClose }: ToastNotificationProps) {
         <div className="font-semibold text-sm">{toast.title}</div>
         <div className="text-xs text-on-surface-variant leading-relaxed">{toast.message}</div>
       </div>
-      <button onClick={onClose} className="ml-auto text-outline hover:text-on-surface p-1">
+      <button aria-label="Dismiss notification" onClick={onClose} className="ml-auto text-outline hover:text-on-surface p-1">
         <span className="material-symbols-outlined text-[16px]">close</span>
       </button>
     </div>

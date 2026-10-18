@@ -1,5 +1,11 @@
 # ClearanceX — Graph Hacks implementation work plan
 
+**Competition release update — 18 October 2026:** A rewritten Track 01 README, judge/submission/demo materials, cross-platform setup, automated verification workflow and frozen post-development evaluation are prepared. Fresh tests: **79 backend passed/1 skipped; 29 UI passed**. Actual first comparison: **19/20 graph versus 13/20 flat**, $0.0455048 estimated, with the failure retained. See [release readiness](Docs/RELEASE_READINESS.md). Public publication, human recording/visual acceptance, eligibility and final submission remain open; guideline recommendations below are retained.
+
+**Current web/password update — 18 October 2026:** Admin-created customer accounts now sign in with temporary credentials and must choose their own password before entering the shipment product. Admin confirmation/filtering, graph dependency preview, keyboard navigation and route loading are improved. **78 backend tests passed, 1 skipped; 28 frontend tests passed; 38 live customer checks and 13 graph/product checks passed.** See [the current implementation report](Docs/WEB_POLISH_REPORT.md). The original Overview and recommended competition features are retained. Earlier validation counts below describe previous stages; broad roadmap/submission gates remain open.
+
+
+
 **Latest local validation — 18 October 2026:** All nine reported runtime bugs are fixed within the tested four-PDF workflow. The running app passes upload, graph-backed review and per-item XML preparation; 62 selected tests pass with one skipped. See [the verification and working test output](Docs/NINE_FIXES_VERIFICATION.md). The original Overview design is retained. Broader roadmap and submission requirements remain as documented below.
 
 **Prepared:** 17 October 2026, Asia/Colombo

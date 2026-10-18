@@ -33,7 +33,7 @@ api.interceptors.response.use(response => response, error => {
   }
   return Promise.reject(error);
 });
-export interface AuthUser { id: string; email: string; tenant_id: string; role: 'viewer' | 'reviewer' | 'admin' }
+export interface AuthUser { id: string; email: string; tenant_id: string; company_name?: string; requires_password_change?: boolean; role: 'user' | 'viewer' | 'reviewer' | 'admin' | 'platform_admin' }
 export async function signIn(email: string, password: string): Promise<AuthUser> {
   csrfToken = null;
   const { data } = await api.post('/auth/login', { email, password });
@@ -43,6 +43,11 @@ export async function signIn(email: string, password: string): Promise<AuthUser>
 export async function signOut() {
   await api.post('/auth/logout');
   csrfToken = null;
+}
+export async function changePassword(currentPassword: string, newPassword: string): Promise<AuthUser> {
+  const { data } = await api.post('/auth/change-password', { current_password: currentPassword, new_password: newPassword });
+  csrfToken = data.csrf_token;
+  return data.user;
 }
 export function apiError(error: unknown, fallback = 'The request could not be completed.'): string {
   if (axios.isAxiosError(error)) {

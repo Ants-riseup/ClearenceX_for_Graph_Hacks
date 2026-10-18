@@ -1,0 +1,44 @@
+name: Verify competition source
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: clearancex_test
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: clearancex_local_test_only
+        ports: ['5449:5432']
+        options: --health-cmd "pg_isready -U test -d clearancex_test" --health-interval 5s --health-timeout 5s --health-retries 15
+      graph:
+        image: falkordb/falkordb:v4.12.0
+        env:
+          REDIS_ARGS: --requirepass clearancex_graph_test_only
+        ports: ['6399:6379']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: python -m venv .venv
+      - run: .venv/bin/python -m pip install -r backend/requirements-test.txt -r backend/requirements-mcp.txt
+      - run: npm --prefix frontend ci
+      - run: npm test
+      - run: npm run test:ui
+      - run: npm run build
+      - run: npm run lint
+      - run: .venv/bin/python scripts/package_project.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reviewed-source
+          path: output/release/ClearanceX_Graph_Hacks_Source.zip

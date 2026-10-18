@@ -7,7 +7,9 @@ from .models import Tenant, User, Membership
 from .security import passwords
 
 
-def create_user(email, tenant_name, role="reviewer", password=None):
+def create_user(email, tenant_name, role="user", password=None):
+    if role not in {'user', 'admin', 'reviewer', 'viewer'}:
+        raise ValueError('Unknown account role.')
     secret = password or secrets.token_urlsafe(20)
     with SessionLocal() as db:
         email = email.strip().lower()
@@ -28,13 +30,23 @@ def create_user(email, tenant_name, role="reviewer", password=None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=["migrate", "migration-status", "create-user", "recover-uploads", 'reconcile-graphs'])
+    parser.add_argument("command", choices=["migrate", "migration-status", "create-user", "recover-uploads", 'reconcile-graphs', 'grant-platform-admin'])
     parser.add_argument("--email")
     parser.add_argument("--tenant", default="ClearanceX team")
-    parser.add_argument("--role", choices=["reviewer", "viewer", "admin"], default="reviewer")
+    parser.add_argument("--role", choices=["user", "admin", "reviewer", "viewer"], default="user")
     args = parser.parse_args()
     init_db()
-    if args.command == "create-user":
+    if args.command == 'grant-platform-admin':
+        if not args.email:
+            parser.error('--email is required')
+        from .models import Session
+        with SessionLocal() as db:
+            user = db.query(User).filter_by(email=args.email.strip().lower()).with_for_update().one()
+            user.platform_admin = 1
+            db.query(Session).filter_by(user_id=user.id).delete()
+            db.commit()
+        print('Explicit platform administrator granted; prior sessions revoked. Company roles were preserved.')
+    elif args.command == "create-user":
         if not args.email:
             parser.error("--email is required")
         user, password = create_user(args.email, args.tenant, args.role)

@@ -8,6 +8,9 @@ class Tenant(Base):
     id = Column(String(64), primary_key=True)
     name = Column(String(200), nullable=False)
     settings = Column(JSON, nullable=False, default=dict)
+    status = Column(String(20), nullable=False, default='active')
+    version = Column(Integer, nullable=False, default=1)
+    profile = Column(JSON, nullable=False, default=dict)
 
 
 class User(Base):
@@ -16,6 +19,18 @@ class User(Base):
     email = Column(String(254), unique=True, nullable=False)
     password_hash = Column(String(512), nullable=False)
     disabled = Column(Integer, nullable=False, default=0)
+    platform_admin = Column(Integer, nullable=False, default=0)
+    must_change_password = Column(Integer, nullable=False, default=0)
+
+
+class CompanyEvent(Base):
+    __tablename__ = 'cx_company_events'
+    id = Column(String(64), primary_key=True)
+    company_id = Column(String(64), ForeignKey('cx_tenants.id'), nullable=False, index=True)
+    actor_id = Column(String(64), nullable=False)
+    action = Column(String(40), nullable=False)
+    created_at = Column(BigInteger, nullable=False)
+    details = Column(JSON, nullable=False, default=dict)
 
 
 class Membership(Base):
@@ -23,6 +38,19 @@ class Membership(Base):
     user_id = Column(String(64), ForeignKey("cx_users.id"), primary_key=True)
     tenant_id = Column(String(64), ForeignKey("cx_tenants.id"), primary_key=True)
     role = Column(String(20), nullable=False)
+    disabled = Column(Integer, nullable=False, default=0)
+    version = Column(Integer, nullable=False, default=1)
+
+
+class AccountEvent(Base):
+    __tablename__ = 'cx_account_events'
+    id = Column(String(64), primary_key=True)
+    tenant_id = Column(String(64), ForeignKey('cx_tenants.id'), nullable=False, index=True)
+    actor_id = Column(String(64), nullable=False)
+    target_id = Column(String(64), nullable=False)
+    action = Column(String(40), nullable=False)
+    created_at = Column(BigInteger, nullable=False)
+    details = Column(JSON, nullable=False, default=dict)
 
 
 class LoginAttempt(Base):

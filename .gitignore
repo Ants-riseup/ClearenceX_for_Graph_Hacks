@@ -21,3 +21,6 @@ tmp/
 
 output/private-backups/
 output/release/
+
+# Supplied shipment documents remain local; release demos use synthetic data.
+/Docs/TEST FILE/

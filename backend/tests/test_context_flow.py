@@ -27,6 +27,19 @@ def evidence(client, sid, field="GROSS_WEIGHT"):
     return r.json()["evidence"]
 
 
+def test_change_impact_preview_is_read_only_and_revision_bound():
+    client, _ = account(); sid = demo(client)
+    state = status(client, sid)
+    params = {'document_id': state['documents'][0]['document_id'], 'expected_revision': state['source_revision']}
+    response = client.get(f'/api/shipments/{sid}/change-impact', params=params)
+    assert response.status_code == 200 and response.json()['impact'] == []
+    assert status(client, sid)['source_revision'] == state['source_revision']
+    assert client.get(f'/api/shipments/{sid}/change-impact', params={**params, 'expected_revision': state['source_revision'] + 1}).status_code == 409
+    assert client.get(f'/api/shipments/{sid}/change-impact', params={**params, 'expected_revision': 0}).status_code == 422
+    other, _ = account()
+    assert other.get(f'/api/shipments/{sid}/change-impact', params=params).status_code == 404
+
+
 def approve(client, sid, assertion):
     rev = status(client, sid)["source_revision"]
     task = client.post(f"/api/shipments/{sid}/review-tasks", json={"field_id": assertion["canonical_field_id"],

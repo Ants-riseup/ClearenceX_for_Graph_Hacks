@@ -19,6 +19,7 @@ from context_app.upload import router as upload_router, process_one_upload
 from context_app.workspace import router as workspace_router
 from context_app.exports import router as export_router
 from context_app.goods import router as goods_router
+from context_app.companies import router as companies_router
 
 logger = logging.getLogger(__name__)
 
@@ -108,9 +109,15 @@ async def protect(request: Request, call_next):
         if path.startswith("/api/") and not path.startswith("/api/auth/") and request.method != "OPTIONS":
             user = await asyncio.to_thread(identity, request)
             request.state.user = user
+            if user.get('requires_password_change'):
+                raise HTTPException(403, 'Choose your own password before opening your shipment workspace.')
+            if user['role'] == 'platform_admin' and not path.startswith('/api/platform/'):
+                raise HTTPException(403, 'Use the company management portal. Company documents require a company account.')
+            if path.startswith('/api/platform/') and user['role'] != 'platform_admin':
+                raise HTTPException(403, 'ClearanceX platform administrator required.')
             if request.method not in {"GET", "HEAD"}:
                 check_csrf(request, user)
-                if user["role"] not in {"reviewer", "admin"}:
+                if user["role"] not in {"user", "reviewer", "admin", 'platform_admin'}:
                     raise HTTPException(403, "Reviewer permission required.")
             match = re.match(r"^/api/(?:shipments|upload)/([^/]+)", path)
             if match and match[1] != "upload":
@@ -136,6 +143,7 @@ app.include_router(context_router)
 app.include_router(workspace_router)
 app.include_router(export_router)
 app.include_router(goods_router)
+app.include_router(companies_router)
 app.include_router(router)
 app.include_router(upload_router)
 app.add_middleware(BodyLimitMiddleware)

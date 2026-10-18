@@ -1,116 +1,176 @@
-# ClearanceX Context Agent
+# ClearanceX
 
-ClearanceX connects shipping-document evidence to reviewer decisions. It investigates conflicts using FalkorDB, proposes a source-linked review task, and identifies which approvals become stale when a supporting document changes.
+### When shipment evidence changes, your AI should change its mind.
 
-Built with React/TypeScript, FastAPI, PostgreSQL, FalkorDB and optional OpenAI API inference. The default infrastructure runs locally. OpenAI is a deliberate usage-based option, disabled until configured. This is a document-review prototype; template XML generation is not verified official ASYCUDA integration.
+**Graph Hacks: Context for AI Agents · Track 01 — Agents That Act on Connected Data**
 
-## Start locally with Docker
+ClearanceX helps export teams investigate conflicting shipment documents. It connects source assertions, reviewer decisions and their dependencies in **FalkorDB**. An AI agent follows those relationships, explains the evidence and proposes the next review action.
 
-Requirements: Docker with Compose, internet for initial images, and enough memory/disk for the services. OCR is an optional heavier profile. Windows setup:
+**Correct one source document. Invalidate the approvals that depend on it. Preserve the approvals that do not.** A person remains responsible for approval.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/setup-local.ps1
-docker compose --env-file .env.graphhacks up --build -d
-docker compose --env-file .env.graphhacks exec api python -m context_app.admin create-user --email you@example.com
+[Judge guide](Docs/JUDGE_GUIDE.md) · [Demo](Docs/DEMO.md) · [Graph model](Docs/GRAPH_MODEL.md) · [Evaluation](Docs/ACCEPTANCE_EVALUATION.md) · [Release status](Docs/RELEASE_READINESS.md)
+
+## The problem
+
+An invoice, packing list and air waybill can disagree about a shipment. A plausible answer is not enough: reviewers need the original evidence, the reason for a decision and a way to know whether that decision remains valid after a correction.
+
+ClearanceX treats the decision as a dependency, rather than an isolated chat answer.
+
+## One change, a visible consequence
+
+| Step | What happens |
+|---|---|
+| Investigate | The agent retrieves graph issues and source assertions, then proposes a cited review task. |
+| Review | A person checks the source and approves a value with a reason. |
+| Correct | A new document revision replaces the current source; old evidence stays in history. |
+| Follow dependencies | FalkorDB identifies connected decisions, tasks, memory and export artifacts. |
+| Re-review | Affected approvals become stale; unrelated approvals remain current. Stale decisions cannot authorize export. |
+| Resume | A later session recalls current approved memory without treating stale approvals as current. |
+
+The synthetic demo starts with **450 kg on invoice/packing list and 440 kg on the air waybill**. Approve packing-list weight and invoice package count, then correct the packing list to 440 kg. Weight approval becomes stale; invoice package approval survives.
+
+## Why a graph is necessary
+
+```mermaid
+flowchart LR
+    R[Review decision] -->|DEPENDS_ON| A[Source assertion]
+    A -->|DEPENDS_ON| D[Document revision]
+    M[Approved memory] -->|DEPENDS_ON| R
+    E[Export snapshot] -->|DEPENDS_ON| R
+    C[Source correction] -->|FalkorDB impact traversal| R
 ```
 
-Save the generated password privately. Open **http://localhost:8080**, sign in, open **Context Agent** from the menu, and select **Create synthetic example**. It creates actual PDF files with explicitly precomputed synthetic extraction, then projects their assertions into a real FalkorDB graph. No paid model is needed to inspect graph evidence, create review tasks, approve source values, or demonstrate source-change invalidation.
+Real tenant-specific, revision-scoped FalkorDB queries gate context lookup, proposals, approval validation and source-change impact. Missing or unsynchronized graph context fails explicitly; it does not switch to SQL or canned answers. Independent screens such as document listing can still work.
 
-Linux/macOS: copy `.env.graphhacks.example` to `.env.graphhacks`, replace both `GENERATE_ME` passwords with distinct random hexadecimal values, then run the same Compose commands. Never commit the private file. `scripts/setup-local.ps1` preserves an existing configuration. The databases and graph browser are not published to the host; the UI binds to loopback.
+The impact query follows `DEPENDS_ON` paths of one to four edges: [impact.cypher](backend/context_app/queries/impact.cypher). Also inspect [evidence](backend/context_app/queries/evidence.cypher), [memory](backend/context_app/queries/memory.cypher) and the [full schema](Docs/GRAPH_MODEL.md).
 
-## Demonstrate the graph-dependent flow
+## Run locally
 
-1. Create the synthetic example and wait for **Graph synced**.
-2. Select **Gross Weight**. The graph retrieves the invoice/packing list at 450 kg and AWB at 440 kg. Open a source page.
-3. Enter a review reason, create a review task and, once synced, approve the packing-list assertion.
-4. Select **Package Count**, create a separate task and approve the invoice's 12 packages. This is the unaffected decision.
-5. Apply the **synthetic packing-list correction to 440 kg**. The graph traverses dependencies. The weight approval becomes stale; the package-count decision remains current.
-6. After synchronization, reopen the dossier in another session. Historical approval is retained, but stale memory is excluded. Export readiness requires re-review.
-7. When configured, **Run investigation** uses real OpenAI function calls to select the graph tools and persist a pending review task. An unconfigured model reports an explicit error; it never returns a simulated agent answer.
+Requirements: **Docker with Compose**, **Node.js 24** for the cross-platform setup, internet for initial downloads, and sufficient local resources for four services. No paid hosting, managed database or authentication subscription is required.
 
-FalkorDB is required for context queries, proposals, approvals and source-replacement impact. There is no SQL/NetworkX replacement when the graph is unavailable. Existing deterministic discrepancy code remains for the ordinary review screens.
+```sh
+git clone https://github.com/Ants-riseup/ClearenceX_for_Graph_Hacks.git
+cd ClearenceX_for_Graph_Hacks
+npm run setup:local
+docker compose --env-file .env.graphhacks up --build -d
+```
 
-## Enable the OpenAI agent deliberately
+The clone URL is the configured repository; verify publication of the current release in [release status](Docs/RELEASE_READINESS.md). Windows users without Node can use `powershell -ExecutionPolicy Bypass -File scripts/setup-local.ps1` instead. Both setup commands preserve existing private configuration.
 
-In private `.env.graphhacks`, configure all of:
+Create a private operator and grant platform authority explicitly:
+
+```sh
+docker compose --env-file .env.graphhacks exec api python -m context_app.admin create-user --email operator@example.com --role admin
+docker compose --env-file .env.graphhacks exec api python -m context_app.admin grant-platform-admin --email operator@example.com
+```
+
+Save the generated password privately. Open **http://localhost:8080**, sign in and use **Add customer user**. Each customer gets its own company workspace and a supplied or generated temporary password. Customer sign-in requires **Choose your own password** before shipment access. Public signup is disabled. Platform operators manage access; customer accounts process shipments.
+
+For a synthetic demonstration without the administration steps, bootstrap an ordinary local account:
+
+```sh
+docker compose --env-file .env.graphhacks exec api python -m context_app.admin create-user --email judge@example.test --tenant "Synthetic judge workspace" --role user
+```
+
+This operator-only bootstrap prints a generated password and grants no platform privilege. Sign in and open **Context Agent → Create synthetic example**. Wait for **Graph synced**. Generated PDFs have explicitly precomputed extraction; they are not presented as live OCR.
+
+[Complete setup, migrations, optional MCP/OCR and recovery](Docs/LOCAL_SETUP.md)
+
+## Optional live AI, with a spending ceiling
+
+Graph evidence, human review, memory and correction demonstrations work without inference. **Run investigation** requires OpenAI API access and billable requests. An unavailable model produces an error, never a simulated agent answer.
+
+Configure the private `.env.graphhacks` file deliberately:
 
 ```dotenv
 ENABLE_LIVE_AGENT=true
 OPENAI_API_KEY=your_private_project_key
 OPENAI_AGENT_MODEL=your_supported_tool_calling_model
 AGENT_BUDGET_USD=your_chosen_total_ceiling
-MODEL_INPUT_USD_PER_MILLION=verified_input_rate
-MODEL_OUTPUT_USD_PER_MILLION=verified_output_rate
+MODEL_INPUT_USD_PER_MILLION=verified_input_price
+MODEL_OUTPUT_USD_PER_MILLION=verified_output_price
 ```
 
-Recreate the API with `docker compose --env-file .env.graphhacks up -d api`. Choose a currently available model supporting Chat Completions function calls/structured outputs; verify its current prices. Do not copy the placeholder values above literally. The previous `gpt-4o-mini` default is not assumed to be an appropriate current model.
+Replace every placeholder, verify model availability and [current pricing](https://developers.openai.com/api/docs/pricing), then recreate the API: `docker compose --env-file .env.graphhacks up -d api`. Retained comparisons identify their exact model; no automatic larger-model fallback is enabled.
 
-The agent reserves a conservative per-call cost in PostgreSQL, enforces six tools, one nonparallel call at a time, 600 output tokens per request, a bounded context and at most one final-answer repair, no provider retries or model escalation. The application ledger is shared across processes. Unknown outcomes remain charged at their reserved upper bound. Prices must cover the selected model's complete billed token categories. This is a conservative application control, not a guarantee about a provider invoice or other applications using the same key. Never put keys in the frontend. [Official OpenAI pricing](https://developers.openai.com/api/docs/pricing).
+The agent has six narrow tools, sequential calls, bounded context/output, at most six tool invocations and one final-answer repair. A shared database ledger reserves estimated cost before requests; unknown outcomes retain their conservative charge. This is an application control, not a provider invoice guarantee or a limit on other software using the key. Keys never belong in frontend code or public source.
 
-## Architecture and graph model
+## Architecture
 
 ```text
-Browser -> session/CSRF/tenant checks -> FastAPI
-  -> PostgreSQL: identity, immutable source history, decisions, tasks, runs, usage, outbox
-  -> private PDFs: authorized page viewing
-  -> outbox worker -> versioned FalkorDB snapshots
-  -> bounded agent -> typed graph tools -> pending review proposal
-  -> human decision -> graph dependencies -> stale approval on corrected source
+React / TypeScript
+        │ same-origin API, opaque session, CSRF
+        ▼
+FastAPI ── PostgreSQL: identity, source history, reviews, jobs, usage, outbox
+   │       Private storage: authorized PDFs
+   └── durable projection worker ── FalkorDB: versioned evidence/dependencies
+                                      ▲
+                 bounded AI agent ────┘ typed graph tools
+                         └── pending proposal → human approval
 ```
 
-`Shipment -> Document -> Assertion -> CanonicalField` retains contradictory evidence. `Decision -> DEPENDS_ON -> Assertion -> DEPENDS_ON -> Document` makes change impact queryable. `Memory -> DEPENDS_ON -> Decision` excludes invalidated conclusions. Each tenant gets a graph selected by the authenticated backend, with shipment/revision filtering inside every query.
+PostgreSQL preserves authoritative history and the durable outbox; FalkorDB supplies connected context and dependency traversal. An optional authenticated **stdio MCP server** exposes the same six tools through normal API authorization. It cannot approve, execute arbitrary code/Cypher or select another tenant.
 
-Essential queries: [`backend/context_app/queries/`](backend/context_app/queries/). Full model: [Docs/GRAPH_MODEL.md](Docs/GRAPH_MODEL.md). Setup, recovery and optional MCP: [Docs/LOCAL_SETUP.md](Docs/LOCAL_SETUP.md).
+## Implemented product
 
-## Security and data boundaries
+- Bounded private digital-PDF upload/extraction, real processing status, retry and resume.
+- Source-linked review, document corrections/history, private drafts and versioned settings.
+- Graph evidence, dependency previews, investigation traces, pending proposals and approved memory.
+- Customer onboarding, first-login password changes, platform/customer separation and private company workspaces.
+- Audit events, reviewed-goods checks, immutable prototype export snapshots and per-dossier batch ZIP results.
+- Local Compose, ordered migrations, graph reconstruction and documented backup/restore.
 
-- Generated local accounts; Argon2id passwords; random opaque sessions stored as digests; expiry, rotation, logout revocation and membership/role checks.
-- CSRF verification and exact allowed origins on mutations. Local HTTP uses clearly named development cookies. Set `COOKIE_SECURE=true` only behind correctly configured HTTPS; hosting requires the corresponding origin/proxy configuration.
-- All dossier, graph, status, audit, PDF and export routes enforce tenant ownership. Historical unowned uploads are preserved but not automatically exposed or assigned to an account.
-- PDFs use generated storage names, signature/parser/page limits, per-file/request limits and private downloads. Local OCR executes in a bounded credential-isolated subprocess. This is not a hostile-file sandbox; public upload requires additional isolation and review.
-- Model documents are untrusted input; no arbitrary Cypher, URLs, shell or approval tools. Output citation IDs and numerical claims are checked against retrieved evidence.
-- Pending graph projection blocks graph-dependent actions. Expected revision checks and idempotency prevent stale or repeated decisions.
-- Real events are stored; synthesized audit histories are no longer returned for application dossiers. This is not a tamper-proof ledger against database administrators.
+The original Overview design is retained. [Customer flow](Docs/ADMIN_CUSTOMER_FLOW.md) · [Implementation record](Docs/GRAPH_HACKS_DELTA.md)
 
-## Test
+## Evidence and reproducibility
 
-Use an isolated Python environment and the explicit test services:
+Retained live records demonstrate model-selected tools, cited proposals, selective invalidation, new-session memory and real MCP transport. The original comparison achieved **12/12 graph versus 10/12 flat safe outcomes** on six synthetic development dossiers. It was used during debugging and is **not held-out accuracy**.
 
-```powershell
-py -3.11 -m venv .venv
-.venv\Scripts\python.exe -m pip install -r backend/requirements-test.txt
+A separate post-development acceptance set contains **10 dossiers and 20 questions**. Its first live run scored **19/20 graph versus 13/20 flat**, used approximately **41% fewer input tokens** with graph context and cost **$0.0455 combined**. Both modes failed the repeated-correction impact question; the failure is retained. The frozen protocol, source/dataset hashes and limits are in [ACCEPTANCE_EVALUATION.md](Docs/ACCEPTANCE_EVALUATION.md). This is same-team evaluation, not independent third-party certification or general accuracy.
+
+[Recorded evidence](output/verification/) · [Historical evaluation](Docs/EVALUATION.md) · [Release checks](Docs/RELEASE_READINESS.md)
+
+## Run the checks
+
+Use Python **3.11**, Node **24** and isolated services. On Windows, replace `.venv/bin/python` with `.venv\Scripts\python.exe`:
+
+```sh
+python -m venv .venv
+.venv/bin/python -m pip install -r backend/requirements-test.txt -r backend/requirements-mcp.txt
 npm --prefix frontend ci
 npm run test:infra
 npm test
+npm run test:ui
 npm run build
 npm run lint
 ```
 
-Linux/macOS: create `.venv` with `python3 -m venv .venv` and install through `.venv/bin/python`. Test services use loopback ports **5449** (PostgreSQL) and **6399** (FalkorDB); application databases are separate. `npm test` explicitly selects integration and compatible domain tests; older standalone print-and-exit scripts are not silently treated as pytest suites.
+Test ports **5449** and **6399** are separate from application services. Contract tests use a labeled scripted provider; paid-model comparisons are explicit, separate runs. Private supplied-PDF regressions skip when files are absent from public source; synthetic extraction, security, graph and export tests remain runnable.
 
-The tests exercise real database/graph queries, selective invalidation, dependency-edge ablation, replay/stale requests, private PDFs, sessions/tenant denial, graph outage, usage reservations and the agent loop with a clearly labeled scripted provider. Live paid-model and real OCR quality checks are separate. See [Docs/EVALUATION.md](Docs/EVALUATION.md) for observed validation and limits.
+[GitHub Actions](.github/workflows/verify.yml) configures backend/frontend tests, build, lint and source packaging without a provider key. A workflow file alone is not proof of a passing remote run. Component tests use simulated DOM/API responses and do not replace a real browser walkthrough.
 
-## Existing app improvements and honest scope
+## Security and honest limits
 
-Implemented: real sign-in, private sources, graph-backed context screen, persistent decisions/memory/events, source replacement, real graph visualization, upload error handling, bounded polling, explicit OCR failures, shared spending controls and reproducible Compose configuration.
+Passwords use **Argon2id**. Random opaque session tokens are stored as digests, with HttpOnly/SameSite cookies, expiry and revocation. Server checks enforce company ownership, platform permissions, exact origins, CSRF and revisions. SQL/Cypher values are bound; identifiers and tools are restricted. Password changes rotate session/CSRF credentials and revoke previous sessions.
 
-The dossier list supports search, filters, sorting and pagination. Upload monitoring cancels on navigation and can resume or retry saved jobs. Review drafts autosave privately per user; source replacement/type corrections preserve history. Administrators can save versioned workspace settings; weight-policy changes make affected approvals stale. Real batch preparation persists each dossier's result and downloads available reviewed XML files with a manifest. Export snapshots record their source revision, reviewer and dependencies and become stale after relevant changes.
+Documents are untrusted input. Citation IDs and numeric claims are checked. Uploads have signature, size, page and parser limits; extraction runs without provider credentials in a bounded process. It is **not a hardened hostile-file sandbox**.
 
-Digital PDFs are parsed locally from actual text, including labeled fields across pages and explicitly pipe-delimited goods tables. Scanned documents still require the optional PaddleOCR profile; arbitrary layouts and calibrated extraction quality are not claimed. Tariff references remain samples. JWT, MFA, managed hosting, multiple cooperating agents, company-wide knowledge and full production retention remain roadmap items.
+| Supported demonstration | Not claimed |
+|---|---|
+| Tested digital-document layouts with human review | Arbitrary/scanned PDF accuracy or calibrated confidence |
+| Illustrative tariff screen | Maintained official tariffs or regulatory advice |
+| Reviewed prototype XML and batch ZIP | Verified ASYCUDA compatibility or customs transmission |
+| Same-dossier current/stale memory | Cross-shipment learning, Company Brain or multi-agent handoffs |
+| Local security controls and scoped tests | Production certification, MFA or an independent penetration test |
 
-The packaged MCP smoke uses a real stdio client, authenticated HTTP and FalkorDB; source reading, proposal creation and logout denial passed. Live initial and corrected-source OpenAI investigations also passed through the packaged API. See the [completion report](Docs/GRAPH_HACKS_COMPLETION_REPORT.md) for exact scope and remaining items.
+Before public hosting, configure HTTPS/Secure cookies, replace exposed credentials, review parser isolation and verify data rights. The default UI binds to loopback; databases are not published. Private documents, environment files, passwords and backups must stay out of public source.
 
-## Submission materials
+## Competition materials and contribution
 
-- [Work plan and guideline coverage](GRAPH_HACKS_WORKPLAN.md)
-- [Existing/new-work record](Docs/GRAPH_HACKS_DELTA.md)
-- [Demo script](Docs/DEMO.md)
-- [Evaluation report](Docs/EVALUATION.md)
-- [Completion report](Docs/GRAPH_HACKS_COMPLETION_REPORT.md)
+- [Judge guide](Docs/JUDGE_GUIDE.md), [submission draft](Docs/SUBMISSION.md) and [demo script](Docs/DEMO.md)
+- [Manual acceptance](Docs/MANUAL_ACCEPTANCE.md), [graph model](Docs/GRAPH_MODEL.md) and [essential Cypher](backend/context_app/queries/)
+- [Existing/new-work disclosure](Docs/GRAPH_HACKS_DELTA.md), [full retained work plan](GRAPH_HACKS_WORKPLAN.md) and [submission checklist](Docs/SUBMISSION_CHECKLIST.md)
 
-Primary intended track: Agents That Act on Connected Data. Enter memory/other tracks only for demonstrated capabilities. Confirm existing-project reuse eligibility with the organizers. The team must register, verify licensing/data permissions, record the actual working demo and submit; no submission or public deployment is performed by this repository.
+ClearanceX existed before this graph-agent extension. The delta record identifies inherited domain/UI infrastructure and new work. The team must verify reuse eligibility, data/assets rights and meaningful participant contribution under the [official rules](https://www.wemakedevs.org/hackathons/falkordb/rules).
 
-AI assistance disclosure: Codex assisted with this implementation and tests. Team members must inspect, verify and understand the submitted code. Earlier project components are retained and identified in the delta record.
-
-
-Latest four-PDF verification: [nine runtime fixes and tested output](Docs/NINE_FIXES_VERIFICATION.md). The current local build supports source-linked per-item goods review, stale-review invalidation, Decimal valuation allocation and authoritative Overview readiness while retaining the original Overview design.
+**AI assistance:** Codex assisted implementation, documentation and tests. Participants remain responsible for reviewing and understanding the source, graph model, queries, architecture and measurements. Public publication, an actual video, registration and competition submission are separate deliverables tracked in the release report. No winning result is promised.

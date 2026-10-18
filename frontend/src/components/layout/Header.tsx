@@ -4,6 +4,8 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { prefersReducedMotion } from '../../hooks/useScrollAnimations';
 import { useAuth } from '../../hooks/useAuth';
+import { useDialogFocus } from '../../hooks/useDialogFocus';
+import { apiError } from '../../utils/api';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -24,6 +26,10 @@ export function Header() {
   const { user, logout } = useAuth();
   const location = useLocation();
   const currentPath = location.pathname;
+  const platformAdmin = user?.role === 'platform_admin';
+  const initials = (user?.email.split('@')[0].replace(/[^a-z0-9]/gi, '').slice(0, 2) || 'CX').toUpperCase();
+  const [logoutError, setLogoutError] = useState('');
+  const [signingOut, setSigningOut] = useState(false);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -32,6 +38,15 @@ export function Header() {
 
   const headerRef = useRef<HTMLElement>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const accountRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(sidebarRef, isSidebarOpen, () => setIsSidebarOpen(false));
+  useDialogFocus(accountRef, isDropdownOpen, () => setIsDropdownOpen(false));
+  const signOut = async () => {
+    setSigningOut(true); setLogoutError('');
+    try { await logout(); } catch (err) { setLogoutError(apiError(err, 'Sign-out failed. Please try again.')); }
+    finally { setSigningOut(false); }
+  };
 
   const isOverview = currentPath === '/';
 
@@ -100,9 +115,10 @@ export function Header() {
           {/* Left Section: Menu & Logo */}
           <div className="flex items-center gap-3 shrink-0">
             <button
-              onClick={() => setIsSidebarOpen(true)}
+              aria-label="Open navigation" aria-expanded={isSidebarOpen} aria-controls="workspace-navigation"
+              onClick={() => { setIsDropdownOpen(false); setIsSidebarOpen(true); }}
               className={`p-2 -ml-2 rounded-lg transition-colors ${
-                isOverview
+                useTransparentStyle
                   ? 'text-white/80 hover:text-white hover:bg-white/10'
                   : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low'
               }`}
@@ -110,7 +126,7 @@ export function Header() {
               <span className="material-symbols-outlined text-[24px]">menu</span>
             </button>
 
-            <Link to="/" className="flex items-center gap-1.5 group">
+            <Link to={platformAdmin ? '/admin/companies' : '/'} className="flex items-center gap-1.5 group">
               <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white shadow-sm transition-transform group-hover:scale-105 ${
                 useTransparentStyle ? 'bg-white/20 backdrop-blur-md border border-white/30' : 'bg-primary-container'
               }`}>
@@ -122,11 +138,11 @@ export function Header() {
                 Clearance<span className={useTransparentStyle ? 'text-[#5b8fd4]' : 'text-primary-container'}>X</span>
               </span>
               <span className={`text-[11px] px-1.5 py-0.5 rounded font-semibold ml-1 hidden sm:inline-block ${
-                isOverview
+                useTransparentStyle
                   ? 'text-emerald-300 bg-emerald-400/10 border border-emerald-400/20'
                   : 'text-secondary bg-secondary-container/20'
               }`}>
-                Demo
+                {platformAdmin ? 'Admin' : 'Company'}
               </span>
             </Link>
           </div>
@@ -136,15 +152,16 @@ export function Header() {
             {/* Profile & Dropdown */}
             <div className="relative ml-1">
               <button
+                aria-label="Account menu" aria-expanded={isDropdownOpen} aria-controls="account-options"
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="flex items-center focus:outline-none"
               >
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm hover:scale-105 transition-transform ${
-                  isOverview
+                  useTransparentStyle
                     ? 'bg-white/15 backdrop-blur-md border border-white/25 text-white'
                     : 'bg-primary-container/10 border border-primary-container/20 text-primary'
                 }`}>
-                  SL
+                  {initials}
                 </div>
               </button>
 
@@ -157,16 +174,20 @@ export function Header() {
                     onClick={() => setIsDropdownOpen(false)}
                   ></div>
 
-                  <div className="absolute right-0 mt-2 w-48 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/30 py-1.5 z-50 overflow-hidden text-sm font-medium">
+                  <div ref={accountRef} id="account-options" role="dialog" aria-modal="true" aria-label="Account options" className="absolute right-0 mt-2 w-64 max-w-[90vw] bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/30 py-1.5 z-50 overflow-hidden text-sm font-medium">
                     <div className="px-3 py-2 border-b border-outline-variant/20 mb-1">
                       <div className="text-on-surface font-semibold truncate">{user?.email ?? 'Signed out'}</div>
-                      <div className="text-xs text-on-surface-variant mt-0.5">{user?.role ?? 'Document review'}</div>
+                      <div className="text-xs text-on-surface-variant mt-0.5">{platformAdmin ? 'ClearanceX administrator' : user?.role === 'viewer' ? 'Customer · read only' : user ? 'Customer user' : 'Signed out'}</div>
                     </div>
-                    <Link to="/settings" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-2 px-3 py-2 text-on-surface hover:bg-surface-container-low transition-colors">
+                    {!platformAdmin && <Link to="/settings" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-2 px-3 py-2 text-on-surface hover:bg-surface-container-low transition-colors">
                       <span className="material-symbols-outlined text-[18px] text-on-surface-variant">settings</span>
                       Settings
-                    </Link>
-                    {user && <button onClick={() => { setIsDropdownOpen(false); void logout(); }} className="w-full text-left px-3 py-2 text-error hover:bg-surface-container-low">Sign out</button>}
+                    </Link>}
+                    {platformAdmin && <Link to="/admin/companies" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-2 px-3 py-2 text-on-surface hover:bg-surface-container-low"><span className="material-symbols-outlined text-[18px]">domain</span>Admin dashboard</Link>}
+                    {!platformAdmin && <Link to="/auth/change-password" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-2 px-3 py-2 text-on-surface hover:bg-surface-container-low"><span aria-hidden="true" className="material-symbols-outlined text-[18px]">lock_reset</span>Change password</Link>}
+                    {logoutError && <p role="alert" className="px-3 py-2 text-xs text-error">{logoutError}</p>}
+                    {user && <button disabled={signingOut} onClick={() => void signOut()} className="w-full text-left px-3 py-2 text-error hover:bg-surface-container-low disabled:opacity-40">{signingOut ? 'Signing out…' : 'Sign out'}</button>}
+                    <button onClick={() => setIsDropdownOpen(false)} className="w-full text-left px-3 py-2 text-on-surface-variant hover:bg-surface-container-low">Close account menu</button>
                   </div>
                 </>
               )}
@@ -185,6 +206,7 @@ export function Header() {
 
       {/* Sidebar Drawer */}
       <div
+        ref={sidebarRef} id="workspace-navigation" inert={!isSidebarOpen} aria-hidden={!isSidebarOpen} role={isSidebarOpen ? 'dialog' : undefined} aria-modal={isSidebarOpen ? true : undefined} aria-label="Workspace navigation"
         className={`fixed top-0 left-0 bottom-0 w-72 z-[70] shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
@@ -204,6 +226,7 @@ export function Header() {
             </div>
           </div>
           <button
+            aria-label="Close navigation"
             onClick={() => setIsSidebarOpen(false)}
             className="p-1.5 text-white/50 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
           >
@@ -216,7 +239,7 @@ export function Header() {
           <div className="px-3 pb-2.5 text-[10px] font-bold text-outline uppercase tracking-widest">
             Navigation
           </div>
-          {primaryNavItems.map((item) => {
+          {(platformAdmin ? [{ path: '/admin/companies', label: 'Admin dashboard', icon: 'domain' }] : primaryNavItems).map((item) => {
             const isActive = (item.path === '/' && currentPath === '/') ||
               (item.path !== '/' && currentPath.startsWith(item.path));
 
@@ -259,14 +282,14 @@ export function Header() {
                 <span className="material-symbols-outlined text-secondary text-[17px]">verified_user</span>
               </div>
               <div className="min-w-0">
-                <div className="text-xs font-bold text-on-surface">Demo workspace</div>
-                <div className="text-[10px] text-on-surface-variant truncate">Document review mode</div>
+                <div className="text-xs font-bold text-on-surface truncate">{platformAdmin ? 'ClearanceX administration' : user?.company_name ?? 'Company workspace'}</div>
+                <div className="text-[10px] text-on-surface-variant truncate">{platformAdmin ? 'Customer access management' : 'Shipment processing'}</div>
               </div>
             </div>
             <div className="px-4 pb-3">
               <div className="flex items-center gap-1.5">
                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                <span className="text-[10px] text-emerald-600 font-medium">System operational</span>
+                <span className="text-[10px] text-emerald-600 font-medium">Signed in to your workspace</span>
               </div>
             </div>
           </div>

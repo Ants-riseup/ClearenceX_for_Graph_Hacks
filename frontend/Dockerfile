@@ -18,7 +18,7 @@
 
 # ── STAGE 1: Build ──────────────────────────────────────────
 # "AS builder" gives this stage a name so Stage 2 can reference it.
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 
 # Set working directory inside the builder container
 WORKDIR /app
@@ -40,7 +40,7 @@ ENV VITE_API_URL=$VITE_API_URL
 
 # Run the production build — outputs to /app/dist
 # This runs: tsc -b && vite build (from package.json "build" script)
-RUN npm run build
+RUN npm test && npm run build
 
 
 # ── STAGE 2: Serve ──────────────────────────────────────────

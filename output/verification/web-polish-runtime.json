@@ -1,0 +1,26 @@
+{
+  "checked_at": "2026-10-18T13:27:14.498618+00:00",
+  "scope": "Actual HTTP/data checks; no browser visual verification or paid calls",
+  "passed": 13,
+  "checks": [
+    "Existing local login preserved",
+    "Active customer filter available",
+    "Platform account denied customer shipment data",
+    "Administration history available",
+    "Verification session signed out",
+    "Existing local login preserved",
+    "Customer denied platform administration",
+    "Customer shipment list available",
+    "Reviewed shipment context loads",
+    "Actual graph dependencies previewed",
+    "Stale graph preview rejected",
+    "Graph preview leaves source revision unchanged",
+    "Verification session signed out"
+  ],
+  "graph_dependency_types": {
+    "ExportSnapshot": 4,
+    "GoodsReview": 2,
+    "Decision": 1,
+    "Memory": 1
+  }
+}

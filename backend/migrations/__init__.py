@@ -37,7 +37,30 @@ def reviewed_goods_provenance(connection):
     connection.execute(text("UPDATE cx_export_artifacts SET validity_state='stale' WHERE validity_state='current'"))
 
 
-UPGRADES = [(1, 'initial_additive_schema', initial_schema), (2, 'queue_and_listing_indexes', queue_and_listing_indexes), (3, 'workspace_settings', workspace_settings), (4, 'export_records', export_records), (5, 'reviewed_goods_provenance', reviewed_goods_provenance)]
+def account_management(connection):
+    from context_app.models import AccountEvent
+    connection.execute(text('ALTER TABLE cx_memberships ADD COLUMN IF NOT EXISTS disabled INTEGER NOT NULL DEFAULT 0'))
+    connection.execute(text('ALTER TABLE cx_memberships ADD COLUMN IF NOT EXISTS version INTEGER NOT NULL DEFAULT 1'))
+    AccountEvent.__table__.create(connection, checkfirst=True)
+
+
+def company_management(connection):
+    from context_app.models import CompanyEvent
+    for statement in (
+        "ALTER TABLE cx_tenants ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'active'",
+        'ALTER TABLE cx_tenants ADD COLUMN IF NOT EXISTS version INTEGER NOT NULL DEFAULT 1',
+        "ALTER TABLE cx_tenants ADD COLUMN IF NOT EXISTS profile JSON NOT NULL DEFAULT '{}'",
+        'ALTER TABLE cx_users ADD COLUMN IF NOT EXISTS platform_admin INTEGER NOT NULL DEFAULT 0',
+    ):
+        connection.execute(text(statement))
+    CompanyEvent.__table__.create(connection, checkfirst=True)
+
+
+def first_login_password(connection):
+    connection.execute(text('ALTER TABLE cx_users ADD COLUMN IF NOT EXISTS must_change_password INTEGER NOT NULL DEFAULT 0'))
+
+
+UPGRADES = [(1, 'initial_additive_schema', initial_schema), (2, 'queue_and_listing_indexes', queue_and_listing_indexes), (3, 'workspace_settings', workspace_settings), (4, 'export_records', export_records), (5, 'reviewed_goods_provenance', reviewed_goods_provenance), (6, 'account_management', account_management), (7, 'company_management', company_management), (8, 'first_login_password', first_login_password)]
 
 
 def upgrade(engine):
